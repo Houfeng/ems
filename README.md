@@ -36,17 +36,17 @@
 #####规范定义
 ```javascript
 define([deps...<require>,<exports>,<module>],
-	   function(... <require>,<exports>,<module>){
+    function(... <require>,<exports>,<module>){
 
     //动态导入依赖 (AMD)
-	require([deps...],function(...){
+    require([deps...],function(...){
+        // TODO
+    });
 
-	});
-
-	//标准导出 (AMD)
-	return {
-		say:function(){}
-	};
+    //标准导出 (AMD)
+    return {
+        say:function(){}
+    };
 
     //类CommonJS导入 (CommonJS)
     var a=require('a');
