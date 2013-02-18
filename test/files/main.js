@@ -1,10 +1,5 @@
-define(function (require,exports,module) {
-	imp.config({
-		alias:{
-			'a':'a.js'
-		}
-	});
-	require(['a'],function (a) {
-		a.say();
-	});
+define(['a.js', 'b.js','require'], function(a, b, require, exports, module) {
+	alert(require);
+	a.say('main');
+	b.say('main');
 });

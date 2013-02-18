@@ -1,6 +1,7 @@
 define(function (require,exports,module) {
-	//alert('a');
-	module.exports={say:function(){
-		alert('b');
-	}};
+	return {
+		say:function(x){
+			alert('b say:'+x);
+		}
+	};
 });
