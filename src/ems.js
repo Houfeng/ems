@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2
+ * EMS(IMP) v0.2.2
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -52,10 +52,20 @@ this.ems = this.imp = {};
 			if(!list || !handler) {
 				return;
 			}
-			for(var i in list) {
-				var rs = handler.call(list[i], i);
-				if(rs) {
-					break;
+			if((list instanceof Array) || (list.length && list[0])) {
+				var listLength = list.length;
+				for(var i = 0; i < listLength; i++) {
+					if(list[i]) {
+						var rs = handler.call(list[i], i);
+						if(rs) break;
+					}
+				}
+			} else {
+				for(var i in list) {
+					if(list[i]) {
+						var rs = handler.call(list[i], i);
+						if(rs) break;
+					}
 				}
 			}
 		};
@@ -96,26 +106,21 @@ this.ems = this.imp = {};
 	/**
 	 * 处理事件监听器
 	 */
-	var handleEventListener = function(element, name, handler) {
-			element.addEventListener = element.addEventListener ||
-			function(name, fn, useCapture) {
-				if(element.attachEvent) element.attachEvent("on" + name, handler);
-			};
-			element.removeEventListener = element.removeEventListener ||
-			function(name, fn, useCapture) {
-				if(element.detachEvent) element.detachEvent("on" + name, handler);
-			};
-			return element;
+	var bindEvent = function(element, name, handler) {
+			if(element.addEventListener) {
+				element.addEventListener(name, handler);
+			} else if(element.attachEvent) {
+				element.attachEvent("on" + name, handler);
+			}
 		};
 
 	/**
 	 * 绑定load事件
 	 */
 	var bindLoadEvent = function(element, handler) {
-			if(!handler) return;
-			handleEventListener(element);
+			if(!element || !handler) return;
 			var loadEventName = element.attachEvent ? "readystatechange" : "load";
-			element.addEventListener(loadEventName, function() {
+			bindEvent(element, loadEventName, function() {
 				var readyState = element.readyState || "loaded";
 				if(readyState == "loaded" || readyState == "interactive" || readyState == "complete") {
 					handler.apply(element, arguments);
@@ -163,12 +168,13 @@ this.ems = this.imp = {};
 			moduleTable[uri].loadCallbacks.push(callback);
 			//创建无素
 			moduleTable[uri].element = uri.indexOf('.css') > 0 ? createStyle(uri) : createScript(uri);
-			//绑定load事件
+			//绑定load事件,模块下载完成，执行完成define，会立即触发load
 			bindLoadEvent(moduleTable[uri].element, function() {
+				var currently = currentlyQueque.shift() || {};
 				moduleTable[uri].deps = currently.moduleDeps;
 				moduleTable[uri].declare = currently.moduleDeclare;
 				//清空currently
-				currently.moduleDeps = currently.moduleDeclare = null;
+				currently = null;
 				//处理模块静态依赖
 				moduleTable[uri].require(moduleTable[uri].deps, function() {
 					if(moduleTable[uri].declare) {
@@ -200,7 +206,7 @@ this.ems = this.imp = {};
 	 * 加载一组文件
 	 */
 	owner.load = function(uriList, callback) {
-		var exportsList = null;
+		var exportsList = window || {};
 		var uriCount = 0;
 		if(uriList && uriList.length > 0) {
 			each(uriList, function() {
@@ -209,13 +215,13 @@ this.ems = this.imp = {};
 					if(uriCount >= uriList.length) {
 						if(callback) {
 							exportsList = getModuleExportsFromCache(uriList);
-							callback.apply(null, exportsList);
+							callback.apply(exportsList, exportsList);
 						}
 					}
 				});
 			});
 		} else {
-			callback.apply(null, exportsList);
+			callback.apply(exportsList, exportsList);
 		}
 		return exportsList;
 	};
@@ -304,26 +310,31 @@ this.ems = this.imp = {};
 		};
 
 	/**
-	 * 当前加载完成的模块实现函数
+	 * 当前加载完成的模块的“依赖表”及“声明”栈；
 	 */
-	var currently = {
-		moduleDeclare: null,
-		moduleDeps: null
-	}
+	var currentlyQueque = [];
 
 	/**
 	 * 定义一个模块
 	 */
-	owner.define = function(moduleDeps, moduleDeclare) {
-			if(moduleDeps && moduleDeclare) {
-				currently.moduleDeps = moduleDeps;
-				currently.moduleDeclare = moduleDeclare;
-			} else if(moduleDeps) {
-				currently.moduleDeclare = moduleDeps;
-			} else {
-				//no handle
-			}
-		};
+	owner.define = function(_moduleDeps, _moduleDeclare) {
+		if(_moduleDeps && _moduleDeclare && (typeof _moduleDeclare == 'function')) {
+			currentlyQueque.push({
+				moduleDeps: _moduleDeps,
+				moduleDeclare: _moduleDeclare
+			});
+		} else if(_moduleDeps && !_moduleDeclare && (typeof _moduleDeps == 'function')) {
+			currentlyQueque.push({
+				moduleDeclare: _moduleDeps
+			});
+		} else if(_moduleDeps && !_moduleDeclare && (typeof _moduleDeps != 'function')) {
+			currentlyQueque.push({
+				moduleDeclare: function() {
+					return _moduleDeps;
+				}
+			});
+		}
+	};
 
 	/**
 	 * 标识define为amd或emd的实现

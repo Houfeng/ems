@@ -1,4 +1,4 @@
-define(function (b,require,exports,module) {
+define(function ($,require,exports,module) {
 	return {
 		say:function(x){
 			alert('a say:'+x);
