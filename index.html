@@ -33,38 +33,59 @@
       <section id="main_content" class="inner">
         <h3>EMS(IMP)</h3>
 
-<blockquote>
-<p>最新版本 v0.1
-Easy Module System: 简洁、易用的模块系统; 
-ems 全称为 "Easy Module System" 他还有一个别名叫: "imp"; 
-ems 作为 "EMD" 的标准实现范本; 完全符合 "EMD规范"; </p>
-</blockquote>
+<pre><code>+ Easy Module System: 简洁、易用的模块系统; 
++ ems 全称为 "Easy Module System" 他还有一个别名叫: "imp"; 
++ ems 作为 "EMD" 的标准实现范本; 完全符合 "EMD规范"; 
+</code></pre>
+
+<h3>最新版本</h3>
+
+<pre><code>+ v0.2.2
+</code></pre>
+
+<h3>支持</h3>
+
+<pre><code>+ IE
++ Chrome
++ Firefox
++ Safari 
++ Opera
+</code></pre>
 
 <h3>联系</h3>
 
-<blockquote>
-<p>作者：侯锋
-邮箱：<a href="mailto:admin@xhou.net">admin@xhou.net</a>
-网站：<a href="http://houfeng.net">http://houfeng.net</a> , <a href="http://houfeng.net/ems">http://houfeng.net/ems</a></p>
-</blockquote>
+<pre><code>+ 作者：侯锋
++ 邮箱：admin@xhou.net
++ 网站：http://houfeng.net , http://houfeng.net/ems
+</code></pre>
 
 <h3>EMD 规范</h3>
 
-<blockquote>
-<p>EMD 全称为 "Easy Module Definition"; 
-EMD 类似AMD、CMD，但比AMD、CMD更加简洁、易用。</p>
-</blockquote>
+<pre><code>+ EMD 全称为 "Easy Module Definition"; 
++ EMD 是AMD规范的子集，移除的“具名”模块的编写方式（AMD中虽支持，但不被推荐，所有EMD移除 了此方式），所以EDM只能写AMD中所谓的“匿名模块”；
++ 符合EMD的模块可以，直接在实现AMD的模块系统中加载使用；
+</code></pre>
 
 <h5>规范定义</h5>
 
-<div class="highlight"><pre><span class="nx">define</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span><span class="nx">exports</span><span class="p">,</span><span class="nx">module</span><span class="p">){</span>
-    <span class="nx">require</span><span class="p">([</span><span class="s1">'module1.js'</span><span class="p">,</span><span class="s1">'module2.js'</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">module1</span><span class="p">,</span><span class="nx">module2</span><span class="p">){</span>
-        <span class="nx">module1</span><span class="p">.</span><span class="nx">doSomesing</span><span class="p">();</span>
-        <span class="nx">module2</span><span class="p">.</span><span class="nx">doSomesing</span><span class="p">();</span>
+<div class="highlight"><pre><span class="nx">define</span><span class="p">([</span><span class="nx">deps</span><span class="p">...</span><span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">]</span><span class="kd">function</span><span class="p">(...</span> <span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">){</span>
+
+    <span class="c1">//动态导入依赖 (AMD)</span>
+    <span class="nx">require</span><span class="p">([</span><span class="nx">deps</span><span class="p">...],</span><span class="kd">function</span><span class="p">(...){</span>
+
     <span class="p">});</span>
-    <span class="nx">exports</span><span class="p">.</span><span class="nx">doSomesing</span><span class="o">=</span><span class="kd">function</span><span class="p">(){</span>
-        <span class="c1">//TODO</span>
+
+    <span class="c1">//标准导出 (AMD)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="nx">say</span><span class="o">:</span><span class="kd">function</span><span class="p">(){}</span>
     <span class="p">};</span>
+
+    <span class="c1">//类CommonJS导入 (CommonJS)</span>
+    <span class="kd">var</span> <span class="nx">a</span><span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s1">'a'</span><span class="p">);</span>
+
+    <span class="c1">//类CommonJS导出 (CommonJS)</span>
+    <span class="nx">exports</span><span class="p">.</span><span class="nx">say</span><span class="o">=</span><span class="kd">function</span><span class="p">(){};</span>
+
 <span class="p">});</span>
 </pre></div>
       </section>
