@@ -93,14 +93,17 @@ this.ems = this.imp = {};
 			return styleElement;
 		};
 
+	var elementContainer = null;
 	/**
 	 * 将一个脚本元素添加DOM结构中
 	 */
 	var appendToDom = function(element) {
-			var container = document.getElementsByTagName('head');
-			container = container ? container[0] : document.body;
+			if(!elementContainer) {
+				elementContainer = document.getElementsByTagName('head');
+				elementContainer = elementContainer ? elementContainer[0] : document.body;
+			}
 			//将script添加到页面
-			container.appendChild(element);
+			elementContainer.appendChild(element);
 		};
 
 	/**
