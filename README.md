@@ -29,13 +29,14 @@
 ###EMD 规范 
 ```
 + EMD 全称为 "Easy Module Definition"; 
-+ EMD 是AMD规范的子集，移除的“具名”模块的编写方式（AMD中虽支持，但不被推荐，所有EMD移除 了此方式），所以EDM只能写AMD中所谓的“匿名模块”；
++ EMD 是AMD规范的子集,所以EDM只能写AMD中所谓的“匿名模块”；
 + 符合EMD的模块可以，直接在实现AMD的模块系统中加载使用；
 ```
 
 #####规范定义
 ```javascript
-define([deps...<require>,<exports>,<module>]function(... <require>,<exports>,<module>){
+define([deps...<require>,<exports>,<module>],
+	   function(... <require>,<exports>,<module>){
 
     //动态导入依赖 (AMD)
 	require([deps...],function(...){
