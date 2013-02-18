@@ -1,9 +1,13 @@
 ###EMS(IMP)
-> 最新版本 v0.1
 ```
 + Easy Module System: 简洁、易用的模块系统; 
 + ems 全称为 "Easy Module System" 他还有一个别名叫: "imp"; 
 + ems 作为 "EMD" 的标准实现范本; 完全符合 "EMD规范"; 
+```
+
+最新版本 
+```
++ v0.2.2
 ```
 
 ###联系
