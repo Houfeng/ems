@@ -11,17 +11,26 @@
 
 ###EMD 规范 
 >EMD 全称为 "Easy Module Definition"; 
->EMD 类似AMD、CMD，但比AMD、CMD更加简洁、易用。
+>EMD 是AMD规范的子集，移除的“具名”模块的编写方式（AMD中虽支持，但不被推荐，所有EMD移除 了此方式），所以EDM只能写AMD中所谓的“匿名模块”；
 
 #####规范定义
 ```javascript
-define(function(require,exports,module){
- 	require(['module1.js','module2.js'],function(module1,module2){
- 		module1.doSomesing();
- 		module2.doSomesing();
- 	});
-	exports.doSomesing=function(){
-		//TODO
-	};
-});
+* define([deps...<require>,<exports>,<module>]function(... <require>,<exports>,<module>){
+*
+* 	    //动态导入依赖 (AMD)
+* 		require([deps...],function(...){
+*
+* 		});
+*
+* 		//标准导出 (AMD)
+* 		return {
+* 			say:function(){}
+* 		};
+*
+*      //类CommonJS导入 (CommonJS)
+*      var a=require('a');
+*
+*      //类CommonJS导出 (CommonJS)
+*      exports.say=function(){};
+* });
 ```
