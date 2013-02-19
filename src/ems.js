@@ -143,9 +143,9 @@ this.ems = this.imp = {};
 			loaded: true,
 			exports: 'exports'
 		},
-		'moeule': {
+		'module': {
 			loaded: true,
-			exports: 'moeule'
+			exports: 'module'
 		}
 	};
 	owner.moduleTable = moduleTable;
@@ -183,9 +183,9 @@ this.ems = this.imp = {};
 					if(moduleTable[uri].declare) {
 						var args = [];
 						for(var i = 0; i < arguments.length; i++) {
-							if(arguments[i] == 'require') arguments[i] = moduleTable[uri].require
-							if(arguments[i] == 'exports') arguments[i] = moduleTable[uri].exports
-							if(arguments[i] == 'module') arguments[i] = moduleTable[uri].module
+							if(arguments[i] == 'require') arguments[i] = moduleTable[uri].require;
+							if(arguments[i] == 'exports') arguments[i] = moduleTable[uri].exports;
+							if(arguments[i] == 'module') arguments[i] = moduleTable[uri];
 							args.push(arguments[i]);
 						}
 						var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
