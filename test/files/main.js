@@ -65,9 +65,9 @@ define(['a.js', 'b.js', 'require', 'exports', 'module'], function(a, b, require,
 
 	test(name + "引入远程模块", function() {
 		stop();
-		define.amd.jQuery = true;
-		require('http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.min.js', function(jq) {
-			ok(jq && jq('body').length > 0, name + '导入http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.min.js');
+		define.emd.jtp = true;
+		require('https://raw.github.com/Houfeng/jtp/master/src/jtp.min.js', function(jtp) {
+			ok(jtp && jtp.parse, name + '导入https://raw.github.com/Houfeng/jtp/master/src/jtp.min.js');
 			start();
 		});
 	});
