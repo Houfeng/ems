@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2.3
+ * EMS(IMP) v0.2.4
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -319,23 +319,39 @@ this.ems = this.imp = {};
 
 	/**
 	 * 定义一个模块
+	 * ems符合EMD规范(不对持moduleId), define还保留moduleId参数是为了兼容AMD规范模块，但在EMD中id将被忽略；
 	 */
-	owner.define = function(_moduleDeps, _moduleDeclare) {
-		if(_moduleDeps && _moduleDeclare && (typeof _moduleDeclare == 'function')) {
-			currentlyQueque.push({
+	owner.define = function(_moduleId, _moduleDeps, _moduleDeclare) {
+		var currently = null;
+		if(_moduleDeps && _moduleDeclare) { //define(a,b,c);
+			currently = {
 				moduleDeps: _moduleDeps,
 				moduleDeclare: _moduleDeclare
-			});
-		} else if(_moduleDeps && !_moduleDeclare && (typeof _moduleDeps == 'function')) {
-			currentlyQueque.push({
+			};
+		} else if(_moduleId && _moduleDeps) { //define(a,b)
+			currently = {
+				moduleDeps: _moduleId,
 				moduleDeclare: _moduleDeps
-			});
-		} else if(_moduleDeps && !_moduleDeclare && (typeof _moduleDeps != 'function')) {
-			currentlyQueque.push({
-				moduleDeclare: function() {
-					return _moduleDeps;
-				}
-			});
+			};
+		} else if(_moduleId && _moduleDeclare) { //define(a,null,b)
+			currently = {
+				moduleDeps: _moduleDeps,
+				moduleDeclare: _moduleDeclare
+			};
+		} else if(_moduleId) { // define(a)
+			currently = {
+				moduleDeclare: _moduleId
+			};
+		}
+		//
+		if(currently) {
+			if(typeof currently.moduleDeclare != 'function') {
+				var obj = currently.moduleDeclare;
+				currently.moduleDeclare = function() {
+					return obj;
+				};
+			}
+			currentlyQueque.push(currently);
 		}
 	};
 

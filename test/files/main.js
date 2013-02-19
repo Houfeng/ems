@@ -1,10 +1,10 @@
 module("EMS(IMP)");
 
-test("系统对象创建", function() {
-	notEqual(ems, null, '创建全局ems对象');
-	notEqual(ems.define, null, '创建ems.define对象');
-	notEqual(define.amd, null, '创建define.amd对象');
-	notEqual(define, null, '创建全局define对象');
+test("系统对象", function() {
+	notEqual(ems, null, '全局ems对象');
+	notEqual(ems.define, null, 'ems.define对象');
+	notEqual(define.amd, null, 'define.amd对象');
+	notEqual(define, null, '全局define对象');
 });
 
 define(['a.js', 'b.js', 'require', 'exports', 'module'], function(a, b, require, exports, module) {
@@ -28,7 +28,22 @@ define(['a.js', 'b.js', 'require', 'exports', 'module'], function(a, b, require,
 		notEqual(module, null, 'module就续');
 		ok(true, "模块" + name + "的uri: " + module.uri);
 		ok(true, "模块" + name + "的id: " + module.id);
-		ok(true, "URI: '../none.js' 转换结果为: " + module.resovleUri('../none.js'));
+
+	});
+
+	test(name + '处理URI', function() {
+		ok(module.resovleUri('../none.js') == 'none.js', "URI: '../none.js' 转换结果为: none.js'");
+		ok(module.resovleUri('dir/../none.js') == 'files/none.js', "URI: 'dir/../none.js' 转换结果为: files/none.js'");
+	});
+
+	test(name + '导入样式表', function() {
+		stop();
+		require('a.css', function(c) {
+			var styles = document.body.currentStyle || document.body.ownerDocument.defaultView.getComputedStyle(document.body, null);
+			//alert(styles.backgroundColor);
+			ok(styles.backgroundColor == '#fefefe' || styles.backgroundColor == '#FEFEFE' || styles.backgroundColor == 'rgb(254, 254, 254)', "导入a.css");
+			start();
+		});
 	});
 
 	test(name + "动态依赖", function() {
@@ -39,4 +54,15 @@ define(['a.js', 'b.js', 'require', 'exports', 'module'], function(a, b, require,
 		});
 	});
 
+	test(name + "引入jquery", function() {
+		stop();
+		define.amd.jQuery = true;
+		require('jQuery.js', function(jq) {
+			ok(jq && jq('body').length > 0, name + '导入jquery');
+			start();
+		});
+	});
+
 });
+
+//end
