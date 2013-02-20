@@ -209,6 +209,9 @@ this.ems = this.imp = {};
 	 * 加载一组文件
 	 */
 	owner.load = function(uriList, callback) {
+		if((typeof uriList) == 'string') {
+			uriList = [uriList];
+		}
 		var exportsList = window || {};
 		var uriCount = 0;
 		if(uriList && uriList.length > 0) {
