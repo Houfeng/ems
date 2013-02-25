@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2.4
+ * EMS(IMP) v0.2.6
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -105,6 +105,27 @@ this.ems = this.imp = {};
 			//将script添加到页面
 			elementContainer.appendChild(element);
 		};
+	/**
+	 * 取所有脚本元素
+	 */
+	var getScriptElements = function() {
+			return document.getElementsByTagName('script');
+		};
+
+	/**
+	 * 取正在执行的脚本
+	 */
+	var getInteractiveScript = function() {
+			var scripts = getScriptElements();
+			var interactiveScript = null;
+			each(scripts, function() {
+				if(this.readyState === 'interactive') {
+					interactiveScript = this;
+					return interactiveScript;
+				}
+			});
+			return interactiveScript;
+		};
 
 	/**
 	 * 处理事件监听器
@@ -149,6 +170,36 @@ this.ems = this.imp = {};
 		}
 	};
 	owner.moduleTable = moduleTable;
+
+	var saveModule = function(uri, currently) {
+			if(!moduleTable[uri]) return;
+			moduleTable[uri].loading = true;
+			moduleTable[uri].deps = currently.moduleDeps;
+			moduleTable[uri].declare = currently.moduleDeclare;
+			//清空currently
+			currently = null;
+			//处理模块静态依赖
+			moduleTable[uri].require(moduleTable[uri].deps, function() {
+				if(moduleTable[uri].declare) {
+					var args = [];
+					for(var i = 0; i < arguments.length; i++) {
+						if(arguments[i] == 'require') arguments[i] = moduleTable[uri].require;
+						if(arguments[i] == 'exports') arguments[i] = moduleTable[uri].exports;
+						if(arguments[i] == 'module') arguments[i] = moduleTable[uri];
+						args.push(arguments[i]);
+					}
+					var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
+					moduleTable[uri].exports = retExports || moduleTable[uri].exports;
+				}
+				//
+				each(moduleTable[uri].loadCallbacks, function() {
+					this(moduleTable[uri].exports);
+				});
+				moduleTable[uri].loaded = true;
+				moduleTable[uri].loadCallbacks = null;
+			});
+		};
+
 	/**
 	 * 加载一个文件
 	 */
@@ -173,33 +224,10 @@ this.ems = this.imp = {};
 			moduleTable[uri].element = uri.indexOf('.css') > 0 ? createStyle(uri) : createScript(uri);
 			//绑定load事件,模块下载完成，执行完成define，会立即触发load
 			bindLoadEvent(moduleTable[uri].element, function() {
-				var currently = currentlyQueque.shift() || {};
-				moduleTable[uri].deps = currently.moduleDeps;
-				moduleTable[uri].declare = currently.moduleDeclare;
-				//清空currently
-				currently = null;
-				//处理模块静态依赖
-				moduleTable[uri].require(moduleTable[uri].deps, function() {
-					if(moduleTable[uri].declare) {
-						var args = [];
-						for(var i = 0; i < arguments.length; i++) {
-							if(arguments[i] == 'require') arguments[i] = moduleTable[uri].require;
-							if(arguments[i] == 'exports') arguments[i] = moduleTable[uri].exports;
-							if(arguments[i] == 'module') arguments[i] = moduleTable[uri];
-							args.push(arguments[i]);
-						}
-						var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
-						moduleTable[uri].exports = retExports || moduleTable[uri].exports;
-					}
-					//
-					each(moduleTable[uri].loadCallbacks, function() {
-						this(moduleTable[uri].exports);
-					});
-					moduleTable[uri].loaded = true;
-					moduleTable[uri].loadCallbacks = null;
-
-				});
-
+				if(!moduleTable[uri].loaded && !moduleTable[uri].loading) {
+					var currently = currentlyQueque.shift() || {};
+					saveModule(uri, currently);
+				}
 			});
 			//
 			appendToDom(moduleTable[uri].element);
@@ -354,7 +382,13 @@ this.ems = this.imp = {};
 					return obj;
 				};
 			}
-			currentlyQueque.push(currently);
+			var iScript = getInteractiveScript();
+			if(iScript) {
+				var uri = iScript.getAttribute('src');
+				saveModule(uri, currently);
+			} else {
+				currentlyQueque.push(currently);
+			}
 		}
 	};
 
