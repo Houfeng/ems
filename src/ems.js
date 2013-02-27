@@ -256,10 +256,8 @@ this.ems = this.imp = {};
 	/**
 	 * 加载一组文件
 	 */
-	owner.load = function(uriList, callback) {
-		if ((typeof uriList) == 'string') {
-			uriList = [uriList];
-		}
+	owner.load = function(deps, callback, baseUri) {
+		var uriList = depsToUriList(deps, baseUri);
 		var exportsList = window || {};
 		var uriCount = 0;
 		if (uriList && uriList.length > 0) {
@@ -348,7 +346,8 @@ this.ems = this.imp = {};
 		each(deps, function() {
 			var uri = aliasTable[this] || this;
 			uri = handleExtension(uri);
-			absUriList.push(resovleUri(uri, baseUri));
+			if (baseUri) uri = resovleUri(uri, baseUri);
+			absUriList.push(uri);
 		});
 		return absUriList;
 	};
@@ -362,8 +361,7 @@ this.ems = this.imp = {};
 			return resovleUri(_uri, uri);
 		};
 		this.require = function(deps, callback) {
-			var uriList = depsToUriList(deps, uri);
-			var exports = owner.load(uriList, callback); //如果提前预加载则能取到返回值
+			var exports = owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
 			return exports && exports.length == 1 ? exports[0] : exports;
 		};
 		this.exports = {};
