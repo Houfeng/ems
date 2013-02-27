@@ -89,7 +89,6 @@ this.ems = this.imp = {};
 		return styleElement;
 	};
 
-
 	/**
 	 * 取所有脚本元素
 	 */
@@ -144,7 +143,6 @@ this.ems = this.imp = {};
 		//将script添加到页面
 		elementContainer.appendChild(element);
 	};
-
 
 	/**
 	 * 处理事件监听器
@@ -296,19 +294,6 @@ this.ems = this.imp = {};
 	};
 
 	/**
-	 * 配置
-	 */
-	owner.config = function(option) {
-		option = option || {};
-		option.alias = option.alias || {};
-		each(option.alias, function(name) {
-			aliasTable[name] = this;
-		});
-	};
-
-	var aliasTable = {};
-
-	/**
 	 * 转换路径为绝对路径
 	 */
 	var resovleUri = function(uri, baseUri) {
@@ -317,11 +302,13 @@ this.ems = this.imp = {};
 		}
 		//
 		var uriParts = uri.split('/');
-		var newUriParts = baseUri.substring(0, baseUri.lastIndexOf('/')).split('/');
-		newUriParts = newUriParts.length > 0 ? newUriParts : [];
+		var baseDir = baseUri.substring(0, baseUri.lastIndexOf('/'));
+		var newUriParts = baseDir.length > 0 ? baseDir.split('/') : [];
 		each(uriParts, function() {
 			if (this == '..') {
 				newUriParts.pop();
+				/*if (newUriParts.length > 0) newUriParts.pop();
+				else newUriParts.push('..');*/
 			} else if (this == '.') {
 				//No Handle
 			} else {
@@ -329,6 +316,17 @@ this.ems = this.imp = {};
 			}
 		});
 		return newUriParts.join('/');
+	};
+
+	/**
+	 * 处理默认扩展名
+	 */
+	var handleExtension = function(uri) {
+		var fileName = uri.substring(baseUri.lastIndexOf('/'), uri.length);
+		if (fileName.indexOf('?') < 0 && fileName.indexOf('#') < 0 && fileName.indexOf('.') < 0) {
+			uri += (extension || ".js");
+		}
+		return uri;
 	};
 
 	/**
@@ -341,6 +339,7 @@ this.ems = this.imp = {};
 		var absUriList = [];
 		each(deps, function() {
 			var uri = aliasTable[this] || this;
+			uri = handleExtension(uri);
 			absUriList.push(resovleUri(uri, baseUri));
 		});
 		return absUriList;
@@ -416,10 +415,24 @@ this.ems = this.imp = {};
 	};
 
 	/**
+	 * 配置
+	 */
+	owner.config = function(option) {
+		option = option || {};
+		option.alias = option.alias || {};
+		each(option.alias, function(name) {
+			aliasTable[name] = this;
+		});
+		extension = extension || option.extension;
+	};
+
+	var aliasTable = {};
+	var extension = ".js";
+
+	/**
 	 * 标识define为amd或emd的实现
 	 */
 	owner.define.amd = owner.define.emd = owner.define.eamd = {};
-
 
 	/**
 	 * 如果在浏览器环境
@@ -431,6 +444,7 @@ this.ems = this.imp = {};
 	/**
 	 * 加载启始模块或文件
 	 */
-	owner.load([getMainFile()]);
+	var mainFile = resovleUri(getMainFile(), location.href);
+	owner.load(mainFile);
 
 })(this.ems);
