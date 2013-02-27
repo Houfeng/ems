@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2.6
+ * EMS(IMP) v0.2.7
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -318,6 +318,7 @@ this.ems = this.imp = {};
 		//
 		var uriParts = uri.split('/');
 		var newUriParts = baseUri.substring(0, baseUri.lastIndexOf('/')).split('/');
+		newUriParts = newUriParts.length > 0 ? newUriParts : [];
 		each(uriParts, function() {
 			if (this == '..') {
 				newUriParts.pop();
