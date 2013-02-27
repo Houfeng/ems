@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2.7
+ * EMS(IMP) v0.2.8
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -294,10 +294,17 @@ this.ems = this.imp = {};
 	};
 
 	/**
+	 * 检查是不是系统模块
+	 */
+	var isSystemModule = function(uri) {
+		return (uri == 'require' || uri == 'exports' || uri == 'module');
+	};
+
+	/**
 	 * 转换路径为绝对路径
 	 */
 	var resovleUri = function(uri, baseUri) {
-		if (uri.indexOf('http://') == 0 || uri.indexOf('https://') == 0 || uri.indexOf('/') == 0 || uri == 'require' || uri == 'exports' || uri == 'module') {
+		if (uri.indexOf('http://') == 0 || uri.indexOf('https://') == 0 || uri.indexOf('/') == 0 || isSystemModule(uri)) {
 			return uri;
 		}
 		//
@@ -322,7 +329,8 @@ this.ems = this.imp = {};
 	 * 处理默认扩展名
 	 */
 	var handleExtension = function(uri) {
-		var fileName = uri.substring(baseUri.lastIndexOf('/'), uri.length);
+		if (isSystemModule(uri)) return uri;
+		var fileName = uri.substring(uri.lastIndexOf('/'), uri.length);
 		if (fileName.indexOf('?') < 0 && fileName.indexOf('#') < 0 && fileName.indexOf('.') < 0) {
 			uri += (extension || ".js");
 		}
