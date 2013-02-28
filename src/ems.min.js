@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2.8
+ * EMS(IMP) v0.2.9
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
