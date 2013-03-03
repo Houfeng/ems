@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.0
+ * EMS(IMP) v0.3.1
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -161,7 +161,7 @@ this.ems = this.imp = {};
 	var bindLoadEvent = function(element, handler) {
 		if (!element || !handler) return;
 		//早期的Safari不支持link的load事件，则直接回调handler
-		if (HTMLLinkElement && element instanceof HTMLLinkElement) {
+		if ((typeof HTMLLinkElement != 'undefined') && (element instanceof HTMLLinkElement)) {
 			handler.apply(element, [{}]);
 			return;
 		}
