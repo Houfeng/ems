@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.2.9
+ * EMS(IMP) v0.3.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -160,6 +160,11 @@ this.ems = this.imp = {};
 	 */
 	var bindLoadEvent = function(element, handler) {
 		if (!element || !handler) return;
+		//早期的Safari不支持link的load事件，则直接回调handler
+		if (HTMLLinkElement && element instanceof HTMLLinkElement) {
+			handler.apply(element, [{}]);
+			return;
+		}
 		var loadEventName = element.attachEvent ? "readystatechange" : "load";
 		bindEvent(element, loadEventName, function() {
 			var readyState = element.readyState || "loaded";
@@ -273,7 +278,7 @@ this.ems = this.imp = {};
 				});
 			});
 		} else {
-			callback.apply(exportsList, exportsList);
+			callback.apply(exportsList, []);
 		}
 		return exportsList;
 	};
@@ -450,7 +455,10 @@ this.ems = this.imp = {};
 	/**
 	 * 加载启始模块或文件
 	 */
-	var mainFile = resovleUri(getMainFile(), location.href);
-	owner.load(mainFile);
+	var mainFile = getMainFile();
+	if (mainFile && mainFile != '') {
+		mainFile = resovleUri(mainFile, location.href);
+		owner.load(mainFile);
+	}
 
 })(this.ems);
