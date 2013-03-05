@@ -24,6 +24,7 @@
 + 作者：侯锋
 + 邮箱：admin@xhou.net
 + 网站：http://houfeng.net , http://houfeng.net/ems
++ 邮件组：emsjs@googlegroups.com
 ```
 
 ###EMD 规范 
