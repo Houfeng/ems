@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.1
+ * EMS(IMP) v0.3.2
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -201,27 +201,35 @@ this.ems = this.imp = {};
 		moduleTable[uri].loading = true;
 		moduleTable[uri].deps = currently.moduleDeps;
 		moduleTable[uri].declare = currently.moduleDeclare;
+		moduleTable[uri].declareDeps = currently.declareDeps; //类似CommonJS的依赖表
 		//清空currently
 		currently = null;
-		//处理模块静态依赖
-		moduleTable[uri].require(moduleTable[uri].deps, function() {
-			if (moduleTable[uri].declare) {
-				var args = [];
-				for (var i = 0; i < arguments.length; i++) {
-					if (arguments[i] == 'require') arguments[i] = moduleTable[uri].require;
-					if (arguments[i] == 'exports') arguments[i] = moduleTable[uri].exports;
-					if (arguments[i] == 'module') arguments[i] = moduleTable[uri];
-					args.push(arguments[i]);
+		//先导入类CommonJS方式的依赖
+		moduleTable[uri].require(moduleTable[uri].declareDeps, function() {
+			//处理模块静态依赖
+			moduleTable[uri].require(moduleTable[uri].deps, function() {
+				var imports = arguments;
+				if (moduleTable[uri].declare) {
+					var args = [];
+					for (var i = 0; i < imports.length; i++) {
+						if (imports[i] == 'require') imports[i] = moduleTable[uri].require;
+						if (imports[i] == 'exports') imports[i] = moduleTable[uri].exports;
+						if (imports[i] == 'module') imports[i] = moduleTable[uri];
+						args.push(imports[i]);
+					}
+					args.push(moduleTable[uri].require);
+					args.push(moduleTable[uri].exports);
+					args.push(moduleTable[uri]);
+					var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
+					moduleTable[uri].exports = retExports || moduleTable[uri].exports;
 				}
-				var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
-				moduleTable[uri].exports = retExports || moduleTable[uri].exports;
-			}
-			//
-			each(moduleTable[uri].loadCallbacks, function() {
-				this(moduleTable[uri].exports);
+				//
+				each(moduleTable[uri].loadCallbacks, function() {
+					this(moduleTable[uri].exports);
+				});
+				moduleTable[uri].loaded = true;
+				moduleTable[uri].loadCallbacks = null;
 			});
-			moduleTable[uri].loaded = true;
-			moduleTable[uri].loadCallbacks = null;
 		});
 	};
 
@@ -263,22 +271,20 @@ this.ems = this.imp = {};
 	 */
 	owner.load = function(deps, callback, baseUri) {
 		var uriList = depsToUriList(deps, baseUri);
-		var exportsList = window || {};
+		var exportsList = [];
 		var uriCount = 0;
 		if (uriList && uriList.length > 0) {
 			each(uriList, function() {
 				loadOne(this, function() {
 					uriCount += 1;
 					if (uriCount >= uriList.length) {
-						if (callback) {
-							exportsList = getModuleExportsFromCache(uriList);
-							callback.apply(exportsList, exportsList);
-						}
+						exportsList = getModuleExportsFromCache(uriList);
+						if (callback) callback.apply(exportsList, exportsList);
 					}
 				});
 			});
 		} else {
-			callback.apply(exportsList, []);
+			if (callback) callback.apply(exportsList, exportsList);
 		}
 		return exportsList;
 	};
@@ -317,8 +323,6 @@ this.ems = this.imp = {};
 		each(uriParts, function() {
 			if (this == '..') {
 				newUriParts.pop();
-				/*if (newUriParts.length > 0) newUriParts.pop();
-				else newUriParts.push('..');*/
 			} else if (this == '.') {
 				//No Handle
 			} else {
@@ -341,17 +345,26 @@ this.ems = this.imp = {};
 	};
 
 	/**
+	 * 字符串转为字符串数组
+	 */
+	var stringToStringArray = function(str) {
+		if (str == null) return [];
+		if ((typeof str) == 'string') {
+			str = [str];
+		}
+		return str;
+	};
+
+	/**
 	 * 转换一组依赖为绝对路径
 	 */
 	var depsToUriList = function(deps, baseUri) {
-		if ((typeof deps) == 'string') {
-			deps = [deps];
-		}
+		deps = stringToStringArray(deps);
 		var absUriList = [];
 		each(deps, function() {
 			var uri = aliasTable[this] || this;
 			uri = handleExtension(uri);
-			if (baseUri) uri = resovleUri(uri, baseUri);
+			uri = resovleUri(uri, baseUri || location.href);
 			absUriList.push(uri);
 		});
 		return absUriList;
@@ -381,10 +394,9 @@ this.ems = this.imp = {};
 	var currentlyQueque = [];
 
 	/**
-	 * 定义一个模块
-	 * ems符合EMD规范(不对持moduleId), define还保留moduleId参数是为了兼容AMD规范模块，但在EMD中id将被忽略；
+	 * 创建当前上下文模块信息对象
 	 */
-	owner.define = function(_moduleId, _moduleDeps, _moduleDeclare) {
+	var createCurrently = function(_moduleId, _moduleDeps, _moduleDeclare) {
 		var currently = null;
 		if (_moduleDeps && _moduleDeclare) { //define(a,b,c);
 			currently = {
@@ -406,13 +418,43 @@ this.ems = this.imp = {};
 				moduleDeclare: _moduleId
 			};
 		}
-		//
+		return currently;
+	};
+
+	/**
+	 * 匹配代码内部的类CommonJs的依赖方式
+	 */
+	var matchRequire = function(src) {
+		var rs = [];
+		var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,]/gm;
+		var mh = null;
+		while (mh = regx.exec(src)) {
+			if (mh && mh[1] && mh[1].indexOf('"') < 0 && mh[1].indexOf("'") < 0) {
+				rs.push(mh[1]);
+			}
+		}
+		return rs;
+	};
+	//owner.matchRequire = matchRequire;
+
+	/**
+	 * 定义一个模块
+	 * ems符合EMD规范(不对持moduleId), define还保留moduleId参数是为了兼容AMD规范模块，但在EMD中id将被忽略；
+	 */
+	owner.define = function(_moduleId, _moduleDeps, _moduleDeclare) {
+		var currently = createCurrently(_moduleId, _moduleDeps, _moduleDeclare);
 		if (currently) {
+			//如果模块是一个JSON对象
 			if (typeof currently.moduleDeclare != 'function') {
 				var obj = currently.moduleDeclare;
 				currently.moduleDeclare = function() {
 					return obj;
 				};
+			}
+			//处理模块代码中的类CommonJS的依赖方式
+			var declareDeps = matchRequire(currently.moduleDeclare.toString());
+			if (declareDeps && declareDeps.length > 0) {
+				currently.declareDeps = declareDeps;
 			}
 			//如在此时能取到模块URL则保存模块，否则，将模块描述压入队列在script的load中处理
 			var iScript = getInteractiveScript();
@@ -457,7 +499,6 @@ this.ems = this.imp = {};
 	 */
 	var mainFile = getMainFile();
 	if (mainFile && mainFile != '') {
-		mainFile = resovleUri(mainFile, location.href);
 		owner.load(mainFile);
 	}
 

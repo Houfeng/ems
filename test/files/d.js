@@ -1,4 +1,6 @@
-/*用简单质朴的思维、设计、创意、方法去解决复杂的问题...
+define(function() {
+	/*
+	用简单质朴的思维、设计、创意、方法去解决复杂的问题...
 侯锋博客
 模块的封装与解耦
 
@@ -151,23 +153,9 @@ public class B
 
 
 github > twitter > atom >
-Power by Houfeng - 管理*/
-
-define(['b.js', 'exports'], function(b, exports) {
-
-	var name = "a";
-
-	test('模块' + name, function() {
-		ok(true, '进入' + name + '模块声名函数');
-	});
-
-	test(name + "静态依赖", function() {
-		ok(b && b.name == 'b', name + ' 导入 ' + b.name);
-		b.say(' form ' + name);
-	});
-	exports.name = name;
-	exports.say = function(x) {
-		ok(true, '模块' + name + ',say:' + x);
+Power by Houfeng - 管理
+	 */
+	return {
+		name: 'd'
 	};
-
 });
