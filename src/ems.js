@@ -273,7 +273,7 @@ this.ems = this.imp = {};
 	 */
 	owner.load = function(deps, callback, baseUri) {
 		var uriList = depsToUriList(deps, baseUri);
-		var exportsList = [];
+		var exportsList = null;
 		var uriCount = 0;
 		if (uriList && uriList.length > 0) {
 			each(uriList, function() {
@@ -281,13 +281,13 @@ this.ems = this.imp = {};
 					uriCount += 1;
 					if (uriCount < uriList.length) return;
 					exportsList = getModuleExportsFromCache(uriList);
-					if (callback) callback.apply(exportsList, exportsList);
+					if (callback) callback.apply(exportsList || {}, exportsList);
 				});
 			});
 		} else {
-			if (callback) callback.apply(exportsList, exportsList);
+			if (callback) callback.apply(exportsList || {}, exportsList);
 		}
-		return exportsList;
+		return exportsList && exportsList.length == 1 ? exportsList[0] : exportsList;
 	};
 
 	/**
@@ -380,8 +380,7 @@ this.ems = this.imp = {};
 			return resovleUri(_uri, uri);
 		};
 		this.require = function(deps, callback) {
-			var exports = owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
-			return exports && exports.length == 1 ? exports[0] : exports;
+			return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
 		};
 		this.exports = {};
 		this.declare = null;
