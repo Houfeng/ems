@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.2
+ * EMS(IMP) v0.3.3
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -209,26 +209,28 @@ this.ems = this.imp = {};
 			//处理模块静态依赖
 			moduleTable[uri].require(moduleTable[uri].deps, function() {
 				var imports = arguments;
-				if (moduleTable[uri].declare) {
-					var args = [];
-					for (var i = 0; i < imports.length; i++) {
-						if (imports[i] == 'require') imports[i] = moduleTable[uri].require;
-						if (imports[i] == 'exports') imports[i] = moduleTable[uri].exports;
-						if (imports[i] == 'module') imports[i] = moduleTable[uri];
-						args.push(imports[i]);
+				setTimeout(function() {
+					if (moduleTable[uri].declare) {
+						var args = [];
+						for (var i = 0; i < imports.length; i++) {
+							if (imports[i] == 'require') imports[i] = moduleTable[uri].require;
+							if (imports[i] == 'exports') imports[i] = moduleTable[uri].exports;
+							if (imports[i] == 'module') imports[i] = moduleTable[uri];
+							args.push(imports[i]);
+						}
+						args.push(moduleTable[uri].require);
+						args.push(moduleTable[uri].exports);
+						args.push(moduleTable[uri]);
+						var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
+						moduleTable[uri].exports = retExports || moduleTable[uri].exports;
 					}
-					args.push(moduleTable[uri].require);
-					args.push(moduleTable[uri].exports);
-					args.push(moduleTable[uri]);
-					var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
-					moduleTable[uri].exports = retExports || moduleTable[uri].exports;
-				}
-				//
-				each(moduleTable[uri].loadCallbacks, function() {
-					this(moduleTable[uri].exports);
-				});
-				moduleTable[uri].loaded = true;
-				moduleTable[uri].loadCallbacks = null;
+					//
+					each(moduleTable[uri].loadCallbacks, function() {
+						this(moduleTable[uri].exports);
+					});
+					moduleTable[uri].loaded = true;
+					moduleTable[uri].loadCallbacks = null;
+				}, 0);
 			});
 		});
 	};
@@ -277,10 +279,9 @@ this.ems = this.imp = {};
 			each(uriList, function() {
 				loadOne(this, function() {
 					uriCount += 1;
-					if (uriCount >= uriList.length) {
-						exportsList = getModuleExportsFromCache(uriList);
-						if (callback) callback.apply(exportsList, exportsList);
-					}
+					if (uriCount < uriList.length) return;
+					exportsList = getModuleExportsFromCache(uriList);
+					if (callback) callback.apply(exportsList, exportsList);
 				});
 			});
 		} else {
