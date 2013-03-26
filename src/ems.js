@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.3
+ * EMS(IMP) v0.3.5
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -204,11 +204,11 @@ this.ems = this.imp = {};
 		moduleTable[uri].declareDeps = currently.declareDeps; //类似CommonJS的依赖表
 		//清空currently
 		currently = null;
-		//先导入类CommonJS方式的依赖
-		moduleTable[uri].require(moduleTable[uri].declareDeps, function() {
-			//处理模块静态依赖
-			moduleTable[uri].require(moduleTable[uri].deps, function() {
-				var imports = arguments;
+		//处理模块静态依赖开始
+		moduleTable[uri].require(moduleTable[uri].deps, function() {
+			var imports = arguments;
+			//处理类CommonJS方式的依赖开始
+			moduleTable[uri].require(moduleTable[uri].declareDeps, function() {
 				setTimeout(function() {
 					if (moduleTable[uri].declare) {
 						var args = [];
@@ -231,8 +231,8 @@ this.ems = this.imp = {};
 					moduleTable[uri].loaded = true;
 					moduleTable[uri].loadCallbacks = null;
 				}, 0);
-			});
-		});
+			}); //处理类CommonJS方式的依赖结束
+		}); //处理模块静态依赖结束
 	};
 
 	/**
