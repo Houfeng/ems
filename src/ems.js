@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.5
+ * EMS(IMP) v0.3.6
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -314,12 +314,12 @@ this.ems = this.imp = {};
 	 * 转换路径为绝对路径
 	 */
 	var resovleUri = function(uri, baseUri) {
-		if (uri.indexOf('http://') == 0 || uri.indexOf('https://') == 0 || uri.indexOf('/') == 0 || isSystemModule(uri)) {
+		if (!uri || !baseUri || uri.indexOf('http://') == 0 || uri.indexOf('https://') == 0 || uri.indexOf('/') == 0 || isSystemModule(uri)) {
 			return uri;
 		}
-		//
-		var uriParts = uri.split('/');
-		var baseDir = baseUri.substring(0, baseUri.lastIndexOf('/'));
+		var baseDir = baseUri.split('#')[0].substring(0, baseUri.lastIndexOf('/'));
+		var uriParts = uri.split('#')[0].split('/');
+		var uriHash = uri.split('#')[1];
 		var newUriParts = baseDir.length > 0 ? baseDir.split('/') : [];
 		each(uriParts, function() {
 			if (this == '..') {
@@ -330,7 +330,7 @@ this.ems = this.imp = {};
 				newUriParts.push(this);
 			}
 		});
-		return newUriParts.join('/');
+		return newUriParts.join('/') + (uriHash ? '#' + uriHash : '');
 	};
 
 	/**
@@ -360,12 +360,13 @@ this.ems = this.imp = {};
 	 * 转换一组依赖为绝对路径
 	 */
 	var depsToUriList = function(deps, baseUri) {
+		baseUri = baseUri || location.href;
 		deps = stringToStringArray(deps);
 		var absUriList = [];
 		each(deps, function() {
 			var uri = aliasTable[this] || this;
 			uri = handleExtension(uri);
-			uri = resovleUri(uri, baseUri || location.href);
+			uri = resovleUri(uri, baseUri);
 			absUriList.push(uri);
 		});
 		return absUriList;
