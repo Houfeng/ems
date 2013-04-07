@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.6.2
+ * EMS(IMP) v0.3.6.3
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -445,7 +445,7 @@
 	 */
 	var matchRequire = function(src) {
 		var rs = [];
-		var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,]/gm;
+		var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]]/gm;
 		var mh = null;
 		while (mh = regx.exec(src)) {
 			if (mh && mh[1] && mh[1].indexOf('"') < 0 && mh[1].indexOf("'") < 0) {
