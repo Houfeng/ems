@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.6.1
+ * EMS(IMP) v0.3.6.2
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -37,33 +37,50 @@
  * ******************************************************
  */
 
-this.ems = this.imp = {};
-
 (function(owner) {
+
+	/**
+	 * 检查是否是数组
+	 */
+	var isArray = function(obj) {
+		return (obj instanceof Array) || (obj.length && obj[0])
+	};
 
 	/**
 	 * 遍历数组或对象，return === continue , return object === break
 	 */
 	var each = function(list, handler) {
-		if (!list || !handler) {
-			return;
-		}
-		if ((list instanceof Array) || (list.length && list[0])) {
+		if (!list || !handler) return;
+		if (isArray(list)) {
 			var listLength = list.length;
 			for (var i = 0; i < listLength; i++) {
 				if (list[i]) {
-					var rs = handler.call(list[i], i);
+					var rs = handler.call(list[i], i, list[i]);
 					if (rs) break;
 				}
 			}
 		} else {
-			for (var i in list) {
-				if (list[i]) {
-					var rs = handler.call(list[i], i);
+			for (var key in list) {
+				if (list[key]) {
+					var rs = handler.call(list[key], key, list[key]);
 					if (rs) break;
 				}
 			}
 		}
+	};
+
+	/**
+	 * 从字符串开头匹配
+	 */
+	var startWith = function(str1, str2) {
+		return str1 && str2 && str1.indexOf(str2) == 0;
+	};
+
+	/**
+	 * 是否包含
+	 */
+	var contains = function(str1, str2) {
+		return str1 && str2 && str1.indexOf(str2) > -1;
 	};
 
 	/**
@@ -131,6 +148,7 @@ this.ems = this.imp = {};
 	 * 元素容器
 	 */
 	var elementContainer = null;
+
 	/**
 	 * 将一个脚本元素添加DOM结构中，脚本容器的获取规则依据优先级是 head > body > parent
 	 */
@@ -256,7 +274,7 @@ this.ems = this.imp = {};
 		moduleTable[uri].loadCallbacks = [];
 		moduleTable[uri].loadCallbacks.push(callback);
 		//创建无素
-		moduleTable[uri].element = uri.indexOf('.css') > 0 ? createStyle(uri) : createScript(uri);
+		moduleTable[uri].element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
 		//绑定load事件,模块下载完成，执行完成define，会立即触发load
 		bindLoadEvent(moduleTable[uri].element, function() {
 			if (!moduleTable[uri].loaded && !moduleTable[uri].loading) {
@@ -314,7 +332,7 @@ this.ems = this.imp = {};
 	 * 转换路径为绝对路径
 	 */
 	var resovleUri = function(uri, baseUri) {
-		if (!uri || !baseUri || uri.indexOf('http://') == 0 || uri.indexOf('https://') == 0 || uri.indexOf('/') == 0 || isSystemModule(uri)) {
+		if (!uri || !baseUri || startWith(uri, 'http://') || startWith(uri, 'https://') || startWith(uri, 'file://') || startWith(uri, '/') || isSystemModule(uri)) {
 			return uri;
 		}
 		baseUri = baseUri.split('#')[0];
@@ -325,8 +343,7 @@ this.ems = this.imp = {};
 		each(uriParts, function() {
 			if (this == '..') {
 				newUriParts.pop();
-			} else if (this == '.') {
-				//No Handle
+			} else if (this == '.') { //No Handle
 			} else {
 				newUriParts.push(this);
 			}
@@ -437,7 +454,6 @@ this.ems = this.imp = {};
 		}
 		return rs;
 	};
-	//owner.matchRequire = matchRequire;
 
 	/**
 	 * 定义一个模块
@@ -504,4 +520,5 @@ this.ems = this.imp = {};
 		owner.load(mainFile);
 	}
 
-})(this.ems);
+})(this.ems = this.imp = {});
+//
