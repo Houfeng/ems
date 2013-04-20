@@ -292,8 +292,8 @@
 		var exportsList = null;
 		var uriCount = 0;
 		if (uriList && uriList.length > 0) {
-			each(uriList, function() {
-				loadOne(this, function() {
+			each(uriList, function(i, uri) {
+				loadOne(uri, function() {
 					uriCount += 1;
 					if (uriCount < uriList.length) return;
 					exportsList = getModuleExportsFromCache(uriList);
@@ -311,9 +311,9 @@
 	 */
 	var getModuleExportsFromCache = function(uriList) {
 		var moduleExports = [];
-		each(uriList, function() {
-			if (moduleTable[this]) {
-				moduleExports.push(moduleTable[this].exports);
+		each(uriList, function(i, uri) {
+			if (moduleTable[uri]) {
+				moduleExports.push(moduleTable[uri].exports);
 			}
 		});
 		return moduleExports;
@@ -338,12 +338,12 @@
 		var uriParts = uri.split('#')[0].split('/');
 		var uriHash = uri.split('#')[1];
 		var newUriParts = baseDir.length > 0 ? baseDir.split('/') : [];
-		each(uriParts, function() {
-			if (this == '..') {
+		each(uriParts, function(i, part) {
+			if (part == '..') {
 				newUriParts.pop();
-			} else if (this == '.') { //No Handle
+			} else if (part == '.') { //No Handle
 			} else {
-				newUriParts.push(this);
+				newUriParts.push(part);
 			}
 		});
 		return newUriParts.join('/') + (uriHash ? '#' + uriHash : '');
@@ -379,8 +379,8 @@
 		baseUri = baseUri || location.href;
 		deps = stringToStringArray(deps);
 		var absUriList = [];
-		each(deps, function() {
-			var uri = aliasTable[this] || this;
+		each(deps, function(i, dep) {
+			var uri = aliasTable[dep] || dep;
 			uri = handleExtension(uri);
 			uri = resovleUri(uri, baseUri);
 			absUriList.push(uri);
@@ -489,8 +489,8 @@
 	owner.config = function(option) {
 		option = option || {};
 		option.alias = option.alias || {};
-		each(option.alias, function(name) {
-			aliasTable[name] = this;
+		each(option.alias, function(name, value) {
+			aliasTable[name] = value;
 		});
 		extension = extension || option.extension;
 	};
