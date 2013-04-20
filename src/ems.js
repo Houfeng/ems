@@ -175,7 +175,7 @@
 	var bindLoadEvent = function(element, handler) {
 		if (!element || !handler) return;
 		//早期的Safari不支持link的load事件，则直接回调handler
-		if (!isNull(HTMLLinkElement) && (element instanceof HTMLLinkElement)) {
+		if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
 			handler.apply(element, [{}]);
 			return;
 		}
@@ -242,7 +242,7 @@
 					each(moduleTable[uri].loadCallbacks, function() {
 						this(moduleTable[uri].exports);
 					});
-					if (owner.onLoad) owner.onLoad(moduleTable[uri].exports);
+					if (owner.onLoad) owner.onLoad(moduleTable[uri]);
 					//
 					moduleTable[uri].loaded = true;
 					moduleTable[uri].loadCallbacks = null;
