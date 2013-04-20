@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.6.3
+ * EMS(IMP) v0.3.7
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -40,10 +40,17 @@
 (function(owner) {
 
 	/**
+	 * 检查是否为null或undefined
+	 */
+	var isNull = function(obj) {
+		return (obj === null) || (typeof obj === 'undefined');
+	};
+
+	/**
 	 * 检查是否是数组
 	 */
 	var isArray = function(obj) {
-		return (obj instanceof Array) || (obj.length && obj[0])
+		return (obj instanceof Array) || (obj && obj.length && obj[0]);
 	};
 
 	/**
@@ -54,17 +61,15 @@
 		if (isArray(list)) {
 			var listLength = list.length;
 			for (var i = 0; i < listLength; i++) {
-				if (list[i]) {
-					var rs = handler.call(list[i], i, list[i]);
-					if (rs) break;
-				}
+				if (isNull(list[i])) continue;
+				var rs = handler.call(list[i], i, list[i]);
+				if (!isNull(rs)) return rs;
 			}
 		} else {
 			for (var key in list) {
-				if (list[key]) {
-					var rs = handler.call(list[key], key, list[key]);
-					if (rs) break;
-				}
+				if (isNull(list[key])) continue;
+				var rs = handler.call(list[key], key, list[key]);
+				if (!isNull(rs)) return rs;
 			}
 		}
 	};
@@ -118,15 +123,9 @@
 	 */
 	var getMainFile = function() {
 		var scripts = getScriptElements();
-		var mainFile = '';
-		each(scripts, function() {
-			var dataMain = this.getAttribute('data-main');
-			if (dataMain) {
-				mainFile = dataMain;
-				return true;
-			}
+		return each(scripts, function() {
+			return this.getAttribute('data-main');
 		});
-		return mainFile;
 	};
 
 	/**
@@ -134,14 +133,11 @@
 	 */
 	var getInteractiveScript = function() {
 		var scripts = getScriptElements();
-		var interactiveScript = null;
-		each(scripts, function() {
+		return each(scripts, function() {
 			if (this.readyState === 'interactive') {
-				interactiveScript = this;
-				return interactiveScript;
+				return this;
 			}
 		});
-		return interactiveScript;
 	};
 
 	/**
@@ -179,7 +175,7 @@
 	var bindLoadEvent = function(element, handler) {
 		if (!element || !handler) return;
 		//早期的Safari不支持link的load事件，则直接回调handler
-		if ((typeof HTMLLinkElement != 'undefined') && (element instanceof HTMLLinkElement)) {
+		if (!isNull(HTMLLinkElement) && (element instanceof HTMLLinkElement)) {
 			handler.apply(element, [{}]);
 			return;
 		}
@@ -246,6 +242,8 @@
 					each(moduleTable[uri].loadCallbacks, function() {
 						this(moduleTable[uri].exports);
 					});
+					if (owner.onLoad) owner.onLoad(moduleTable[uri].exports);
+					//
 					moduleTable[uri].loaded = true;
 					moduleTable[uri].loadCallbacks = null;
 				}, 0);
@@ -357,7 +355,7 @@
 	var handleExtension = function(uri) {
 		if (isSystemModule(uri)) return uri;
 		var fileName = uri.substring(uri.lastIndexOf('/'), uri.length);
-		if (fileName.indexOf('?') < 0 && fileName.indexOf('#') < 0 && fileName.indexOf('.') < 0) {
+		if (!contains(fileName, '?') && !contains(fileName, '#') && !contains(fileName, '.')) {
 			uri += (extension || ".js");
 		}
 		return uri;
@@ -448,7 +446,7 @@
 		var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]]/gm;
 		var mh = null;
 		while (mh = regx.exec(src)) {
-			if (mh && mh[1] && mh[1].indexOf('"') < 0 && mh[1].indexOf("'") < 0) {
+			if (mh && mh[1] && !contains(mh[1], '"') && !contains(mh[1], "'")) {
 				rs.push(mh[1]);
 			}
 		}
