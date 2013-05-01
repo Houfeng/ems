@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.3.9
+ * EMS(IMP) v0.4.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -176,14 +176,14 @@
 		if (!element || !handler) return;
 		//早期的Safari不支持link的load事件，则直接回调handler
 		if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
-			handler.apply(element, [{}]);
+			handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
 			return;
 		}
 		var loadEventName = element.attachEvent ? "readystatechange" : "load";
 		bindEvent(element, loadEventName, function() {
 			var readyState = element.readyState || "loaded";
 			if (readyState == "loaded" || readyState == "interactive" || readyState == "complete") {
-				handler.apply(element, arguments);
+				handler.apply(element, arguments || []);
 			}
 		});
 	};
@@ -288,19 +288,19 @@
 	 */
 	owner.load = function(deps, callback, baseUri) {
 		var uriList = depsToUriList(deps, baseUri);
-		var exportsList = null;
+		var exportsList = [];
 		var uriCount = 0;
 		if (uriList && uriList.length > 0) {
 			each(uriList, function(i, uri) {
 				loadOne(uri, function() {
 					uriCount += 1;
 					if (uriCount < uriList.length) return;
-					exportsList = getModuleExportsFromCache(uriList);
-					if (callback) callback.apply(exportsList || {}, exportsList);
+					exportsList = getModuleExportsFromCache(uriList) || exportsList;
+					if (callback) callback.apply(exportsList, exportsList);
 				});
 			});
 		} else {
-			if (callback) callback.apply(exportsList || {}, exportsList);
+			if (callback) callback.apply(exportsList, exportsList);
 		}
 		return exportsList && exportsList.length == 1 ? exportsList[0] : exportsList;
 	};
