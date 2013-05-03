@@ -89,6 +89,30 @@
 
 <span class="p">});</span>
 </pre></div>
+
+<h3>快速指南</h3>
+
+<div class="highlight"><pre><span class="c">&lt;!--方式一--&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">'scripts/ems.js'</span> <span class="na">data-main=</span><span class="s">'scripts/module/main'</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!--方式二--&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">'scripts/ems.js'</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
+    <span class="nx">ems</span><span class="p">.</span><span class="nx">load</span><span class="p">(</span><span class="s1">'scripts/module/main'</span><span class="p">);</span>
+<span class="nt">&lt;/script&gt;</span>
+
+<span class="c">&lt;!--作为脚本加载器使用--&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">'scripts/ems.js'</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
+    <span class="nx">ems</span><span class="p">.</span><span class="nx">load</span><span class="p">(</span><span class="s1">'scripts/script1.js'</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+        <span class="c1">//callback可以省略，也可以在callback处理脚本加载完成后才能执行的操作</span>
+    <span class="p">});</span>
+    <span class="nx">ems</span><span class="p">.</span><span class="nx">load</span><span class="p">([</span><span class="s1">'scripts/script1.js'</span><span class="p">,</span><span class="s1">'scripts/script2.js'</span><span class="p">],</span><span class="kd">function</span><span class="p">(){</span>
+        <span class="c1">//callback可以省略，也可以在callback处理脚本加载完成后才能执行的操作</span>
+    <span class="p">});</span>
+<span class="nt">&lt;/script&gt;</span>
+
+</pre></div>
       </section>
       <footer>
         <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
