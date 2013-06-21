@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.4.0
+ * EMS(IMP) v0.5.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -15,7 +15,7 @@
  * EMD 全称为 "Easy Module Definition"
  *
  * 规范定义:
- * define([deps...<require>,<exports>,<module>]function(... <require>,<exports>,<module>){
+ * define([deps...<require>,<exports>,<module>],function(... <require>,<exports>,<module>){
  *
  * 	    //动态导入依赖 (AMD)
  * 		require([deps...],function(...){
@@ -220,33 +220,35 @@
 		//处理模块静态依赖开始
 		moduleTable[uri].require(moduleTable[uri].deps, function() {
 			var imports = arguments;
-			//处理类CommonJS方式的依赖开始
-			moduleTable[uri].require(moduleTable[uri].declareDeps, function() {
-				setTimeout(function() {
-					if (moduleTable[uri].declare) {
-						var args = [];
-						for (var i = 0; i < imports.length; i++) {
-							if (imports[i] == 'require') imports[i] = moduleTable[uri].require;
-							if (imports[i] == 'exports') imports[i] = moduleTable[uri].exports;
-							if (imports[i] == 'module') imports[i] = moduleTable[uri];
-							args.push(imports[i]);
+			setTimeout(function() {
+				//处理类CommonJS方式的依赖开始
+				moduleTable[uri].require(moduleTable[uri].declareDeps, function() {
+					setTimeout(function() {
+						if (moduleTable[uri].declare) {
+							var args = [];
+							for (var i = 0; i < imports.length; i++) {
+								if (imports[i] == 'require') imports[i] = moduleTable[uri].require;
+								if (imports[i] == 'exports') imports[i] = moduleTable[uri].exports;
+								if (imports[i] == 'module') imports[i] = moduleTable[uri];
+								args.push(imports[i]);
+							}
+							args.push(moduleTable[uri].require);
+							args.push(moduleTable[uri].exports);
+							args.push(moduleTable[uri]);
+							var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
+							moduleTable[uri].exports = retExports || moduleTable[uri].exports;
 						}
-						args.push(moduleTable[uri].require);
-						args.push(moduleTable[uri].exports);
-						args.push(moduleTable[uri]);
-						var retExports = moduleTable[uri].declare.apply(moduleTable[uri], args);
-						moduleTable[uri].exports = retExports || moduleTable[uri].exports;
-					}
-					//
-					each(moduleTable[uri].loadCallbacks, function() {
-						this(moduleTable[uri].exports);
-					});
-					if (owner.onLoad) owner.onLoad(moduleTable[uri]);
-					//
-					moduleTable[uri].loaded = true;
-					moduleTable[uri].loadCallbacks = null;
-				}, 0);
-			}); //处理类CommonJS方式的依赖结束
+						//
+						each(moduleTable[uri].loadCallbacks, function() {
+							this(moduleTable[uri].exports);
+						});
+						if (owner.onLoad) owner.onLoad(moduleTable[uri]);
+						//
+						moduleTable[uri].loaded = true;
+						moduleTable[uri].loadCallbacks = null;
+					}, 0);
+				}); //处理类CommonJS方式的依赖结束
+			}, 0);
 		}); //处理模块静态依赖结束
 	};
 
