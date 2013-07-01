@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.5.0
+ * EMS(IMP) v0.6.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -308,6 +308,24 @@
 	};
 
 	/**
+	 * 卸载一组文件
+	 */
+	owner.unload = function(deps, baseUri) {
+		var uriList = depsToUriList(deps, baseUri);
+		each(uriList, function(i, uri) {
+			if (moduleTable[uri]) {
+				moduleTable[uri].element.parentNode.removeChild(moduleTable[uri].element);
+				moduleTable[uri].exports = null;
+				moduleTable[uri].loading = null;
+				moduleTable[uri].deps = null;
+				moduleTable[uri].declare = null;
+				moduleTable[uri].declareDeps = null;
+				moduleTable[uri].element = null;
+			}
+		});
+	};
+
+	/**
 	 * 从缓存中取得模块
 	 */
 	var getModuleExportsFromCache = function(uriList) {
@@ -399,6 +417,9 @@
 		};
 		this.require = function(deps, callback) {
 			return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
+		};
+		this.unrequire = function(deps) {
+			return owner.unload(deps, uri);
 		};
 		this.exports = {};
 		this.declare = null;
