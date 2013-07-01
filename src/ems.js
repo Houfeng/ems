@@ -321,6 +321,7 @@
 				moduleTable[uri].declare = null;
 				moduleTable[uri].declareDeps = null;
 				moduleTable[uri].element = null;
+				moduleTable[uri] = null;
 			}
 		});
 	};
