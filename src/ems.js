@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.6.0
+ * EMS(IMP) v0.7.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -347,10 +347,29 @@
 	};
 
 	/**
+	 * 是否开头匹配一种URI协议
+	 */
+	var startWithUriProtocol = function(uri) {
+		if (startWith(uri, 'http://') || startWith(uri, 'https://') || startWith(uri, 'file://')) {
+			return true;
+		} else {
+			var regx = /^\S+?:\/\//ig;
+			return regx.test(uri);
+		}
+	};
+
+	/**
+	 * 是否开头匹配根路径
+	 */
+	var startWithPathRoot = function(uri) {
+		return startWith(uri, '/') || startWith(uri, '\\');
+	};
+
+	/**
 	 * 转换路径为绝对路径
 	 */
 	var resovleUri = function(uri, baseUri) {
-		if (!uri || !baseUri || startWith(uri, 'http://') || startWith(uri, 'https://') || startWith(uri, 'file://') || startWith(uri, '/') || isSystemModule(uri)) {
+		if (!uri || !baseUri || startWithUriProtocol(uri) || startWithPathRoot(uri) || isSystemModule(uri)) {
 			return uri;
 		}
 		baseUri = baseUri.split('?')[0].split('#')[0];
