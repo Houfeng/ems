@@ -7,6 +7,14 @@ test('系统对象', function() {
 	notEqual(define, null, '全局define对象');
 });
 
+ems.config({
+	packages:[{
+		name:"abc",
+		location:".",
+		main:'a'
+	}]
+});
+
 define(['a', 'b.js', 'd.js', 'require', 'exports', 'module'], function(a, b, d, require, exports, module) {
 
 	var name = 'main';
@@ -14,6 +22,17 @@ define(['a', 'b.js', 'd.js', 'require', 'exports', 'module'], function(a, b, d, 
 	test('模块' + name, function() {
 		ok(true, '进入' + name + '模块声明函数');
 	});
+
+	test('包' + name, function() {
+		require("abc");
+		ok(true, '导入abc包默认模块a');
+	});
+
+	test('包' + name, function() {
+		require("abc/b");
+		ok(true, '导入abc包模块b');
+	});
+
 
 	test(name + '静态依赖', function() {
 		ok(a && a.name == 'a', name + '导入' + a.name);
@@ -69,6 +88,7 @@ define(['a', 'b.js', 'd.js', 'require', 'exports', 'module'], function(a, b, d, 
 		});
 	});
 
+	/*
 	test(name + "引入远程模块", function() {
 		stop();
 		define.amd.jQuery = true;
@@ -76,7 +96,7 @@ define(['a', 'b.js', 'd.js', 'require', 'exports', 'module'], function(a, b, d, 
 			ok($ && $.fn, name + '导入http://code.jquery.com/jquery-1.9.1.min.js');
 			start();
 		});
-	});
+	});*/
 
 });
 

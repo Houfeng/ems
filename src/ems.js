@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.7.0
+ * EMS(IMP) v0.8.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -42,21 +42,21 @@
 	/**
 	 * 检查是否为null或undefined
 	 */
-	var isNull = function(obj) {
+	function isNull(obj) {
 		return (obj === null) || (typeof obj === 'undefined');
 	};
 
 	/**
 	 * 检查是否是数组
 	 */
-	var isArray = function(obj) {
+	function isArray(obj) {
 		return (obj instanceof Array) || (obj && obj.length && obj[0]);
 	};
 
 	/**
 	 * 遍历数组或对象，return === continue , return object === break
 	 */
-	var each = function(list, handler) {
+	function each(list, handler) {
 		if (!list || !handler) return;
 		if (isArray(list)) {
 			var listLength = list.length;
@@ -77,21 +77,21 @@
 	/**
 	 * 从字符串开头匹配
 	 */
-	var startWith = function(str1, str2) {
+	function startWith(str1, str2) {
 		return str1 && str2 && str1.indexOf(str2) == 0;
 	};
 
 	/**
 	 * 是否包含
 	 */
-	var contains = function(str1, str2) {
+	function contains(str1, str2) {
 		return str1 && str2 && str1.indexOf(str2) > -1;
 	};
 
 	/**
 	 * 创建一个脚本元素
 	 */
-	var createScript = function(uri) {
+	function createScript(uri) {
 		var scriptElement = document.createElement('script');
 		scriptElement.src = uri;
 		scriptElement.async = true;
@@ -103,7 +103,7 @@
 	/**
 	 * 创建一个外联样式元素
 	 */
-	var createStyle = function(uri) {
+	function createStyle(uri) {
 		var styleElement = document.createElement('link');
 		styleElement.href = uri;
 		styleElement.type = "text/css";
@@ -114,14 +114,14 @@
 	/**
 	 * 取所有脚本元素
 	 */
-	var getScriptElements = function() {
+	function getScriptElements() {
 		return document.getElementsByTagName('script');
 	};
 
 	/**
 	 * 获取启始模块或文件
 	 */
-	var getMainFile = function() {
+	function getMainFile() {
 		var scripts = getScriptElements();
 		return each(scripts, function() {
 			return this.getAttribute('data-main');
@@ -131,7 +131,7 @@
 	/**
 	 * 取正在执行的脚本
 	 */
-	var getInteractiveScript = function() {
+	function getInteractiveScript() {
 		var scripts = getScriptElements();
 		return each(scripts, function() {
 			if (this.readyState === 'interactive') {
@@ -148,7 +148,7 @@
 	/**
 	 * 将一个脚本元素添加DOM结构中，脚本容器的获取规则依据优先级是 head > body > parent
 	 */
-	var appendToDom = function(element) {
+	function appendToDom(element) {
 		if (!elementContainer) {
 			elementContainer = document.getElementsByTagName('head');
 			elementContainer = elementContainer && elementContainer[0] ? elementContainer[0] : document.body;
@@ -161,7 +161,7 @@
 	/**
 	 * 处理事件监听器
 	 */
-	var bindEvent = function(element, name, handler) {
+	function bindEvent(element, name, handler) {
 		if (element.addEventListener) {
 			element.addEventListener(name, handler);
 		} else if (element.attachEvent) {
@@ -172,7 +172,7 @@
 	/**
 	 * 绑定load事件
 	 */
-	var bindLoadEvent = function(element, handler) {
+	function bindLoadEvent(element, handler) {
 		if (!element || !handler) return;
 		//早期的Safari不支持link的load事件，则直接回调handler
 		if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
@@ -209,7 +209,7 @@
 	/**
 	 * 保存模块
 	 */
-	var saveModule = function(uri, currently) {
+	function saveModule(uri, currently) {
 		if (!moduleTable[uri]) return;
 		moduleTable[uri].loading = true;
 		moduleTable[uri].deps = currently.moduleDeps;
@@ -255,7 +255,7 @@
 	/**
 	 * 加载一个文件
 	 */
-	var loadOne = function(uri, callback) {
+	function loadOne(uri, callback) {
 		if (moduleTable[uri] == null) {
 			moduleTable[uri] = new ModuleContext(uri);
 		}
@@ -288,7 +288,7 @@
 	/**
 	 * 加载一组文件
 	 */
-	owner.load = function(deps, callback, baseUri) {
+	owner.load=function(deps, callback, baseUri) {
 		var uriList = depsToUriList(deps, baseUri);
 		var exportsList = [];
 		var uriCount = 0;
@@ -329,7 +329,7 @@
 	/**
 	 * 从缓存中取得模块
 	 */
-	var getModuleExportsFromCache = function(uriList) {
+	function getModuleExportsFromCache(uriList) {
 		var moduleExports = [];
 		each(uriList, function(i, uri) {
 			if (moduleTable[uri]) {
@@ -342,14 +342,14 @@
 	/**
 	 * 检查是不是系统模块
 	 */
-	var isSystemModule = function(uri) {
+	function isSystemModule(uri) {
 		return (uri == 'require' || uri == 'exports' || uri == 'module');
 	};
 
 	/**
 	 * 是否开头匹配一种URI协议
 	 */
-	var startWithUriProtocol = function(uri) {
+	function startWithUriProtocol(uri) {
 		if (startWith(uri, 'http://') || startWith(uri, 'https://') || startWith(uri, 'file://')) {
 			return true;
 		} else {
@@ -361,14 +361,14 @@
 	/**
 	 * 是否开头匹配根路径
 	 */
-	var startWithPathRoot = function(uri) {
+	function startWithPathRoot(uri) {
 		return startWith(uri, '/') || startWith(uri, '\\');
 	};
 
 	/**
 	 * 转换路径为绝对路径
 	 */
-	var resovleUri = function(uri, baseUri) {
+	function resovleUri(uri, baseUri) {
 		if (!uri || !baseUri || startWithUriProtocol(uri) || startWithPathRoot(uri) || isSystemModule(uri)) {
 			return uri;
 		}
@@ -391,7 +391,7 @@
 	/**
 	 * 处理默认扩展名
 	 */
-	var handleExtension = function(uri) {
+	function handleExtension(uri) {
 		if (isSystemModule(uri)) return uri;
 		var fileName = uri.substring(uri.lastIndexOf('/'), uri.length);
 		if (!contains(fileName, '?') && !contains(fileName, '#') && !contains(fileName, '.')) {
@@ -401,9 +401,27 @@
 	};
 
 	/**
+	 * 处理包
+	 */
+	function handlePackages(uri){
+		var index=uri.indexOf('/');
+		if(index<0)index=uri.length;
+		var part1=uri.substr(0,index);
+		var part2=uri.substr(index+1,uri.length);
+		each(packageTable,function(name,pack){
+			if(part1 == pack.name){
+				part1 = pack.location||part1;
+				part2 = part2 || pack.main || '';
+				uri= part1+'/'+part2;
+			}
+		});
+		return uri;
+	};
+
+	/**
 	 * 字符串转为字符串数组
 	 */
-	var stringToStringArray = function(str) {
+	function stringToStringArray(str) {
 		if (str == null) return [];
 		if ((typeof str) == 'string') {
 			str = [str];
@@ -414,12 +432,13 @@
 	/**
 	 * 转换一组依赖为绝对路径
 	 */
-	var depsToUriList = function(deps, baseUri) {
+	function depsToUriList(deps, baseUri) {
 		baseUri = baseUri || location.href;
 		deps = stringToStringArray(deps);
 		var absUriList = [];
 		each(deps, function(i, dep) {
 			var uri = aliasTable[dep] || dep;
+			uri = handlePackages(uri);
 			uri = handleExtension(uri);
 			uri = resovleUri(uri, baseUri);
 			absUriList.push(uri);
@@ -430,7 +449,7 @@
 	/**
 	 * 模块上下文件对象
 	 */
-	var ModuleContext = function(uri) {
+	function ModuleContext(uri) {
 		var moduleUri = this.uri = this.id = uri || '/';
 		this.resovleUri = function(_uri, baseUri) {
 			return resovleUri(_uri, baseUri || moduleUri);
@@ -455,7 +474,7 @@
 	/**
 	 * 创建当前上下文模块信息对象
 	 */
-	var createCurrently = function(_moduleId, _moduleDeps, _moduleDeclare) {
+	function createCurrently(_moduleId, _moduleDeps, _moduleDeclare) {
 		var currently = null;
 		if (_moduleDeps && _moduleDeclare) { //define(a,b,c);
 			currently = {
@@ -483,7 +502,7 @@
 	/**
 	 * 匹配代码内部的类CommonJs的依赖方式
 	 */
-	var matchRequire = function(src) {
+	function matchRequire(src) {
 		var rs = [];
 		var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]]/gm;
 		var mh = null;
@@ -531,14 +550,25 @@
 	owner.config = function(option) {
 		option = option || {};
 		option.alias = option.alias || {};
-		each(option.alias, function(name, value) {
+		each(option.alias, function(name, value) {//防止覆盖已添加的别名
 			aliasTable[name] = value;
+		});
+		each(option.packages, function(name, value) {//防止覆盖已添加的包
+			packageTable[name] = value;
 		});
 		extension = extension || option.extension;
 	};
 
+	/**
+	 * 别名列表
+	 */
 	var aliasTable = {};
 	var extension = ".js";
+	/**
+	 * 包列表
+	 * @type {Object}
+	 */
+	var packageTable={};
 
 	/**
 	 * 标识define为amd或emd的实现
