@@ -1,5 +1,4 @@
-/*csd*/
-/**
+/*csd*//**
  * EMS(IMP) v0.9.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
