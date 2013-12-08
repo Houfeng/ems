@@ -1,5 +1,5 @@
 /**
- * EMS(IMP) v0.8.0
+ * EMS(IMP) v0.9.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -35,7 +35,6 @@
  * });
  *
  * ******************************************************/
-
 (function (owner) {
 
     /**
@@ -552,8 +551,10 @@
         each(option.alias, function (name, value) {//防止覆盖已添加的别名
             aliasTable[name] = value;
         });
-        each(option.packages, function (name, value) {//防止覆盖已添加的包
-            packageTable[name] = value;
+        option.packages=option.packages||[];
+        each(option.packages, function (key, value) {//防止覆盖已添加的包
+            value.name=value.name||key;
+            packageTable[key]=value;
         });
         extension = extension || option.extension;
     };
