@@ -1,40 +1,15 @@
 /**
+ *
  * EMS(IMP) v0.9.2
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
  *
- * ***********************< EMS >************************
- *
  * ems 全称为 "Easy Module System" 他还有一个别名叫: "imp";
  * ems 作为 "EMD" 的实现标准范本; 完全符合 "EMD规范";
  *
- * *********************< EMD 规范 >**********************
- *
- * EMD 全称为 "Easy Module Definition"
- *
- * 规范定义:
- * define([deps...<require>,<exports>,<module>],function(... <require>,<exports>,<module>){
- *
- *      //动态导入依赖 (AMD)
- *      require([deps...],function(...){
- *
- *      });
- *
- *      //标准导出 (AMD)
- *      return {
- *          say:function(){}
- *      };
- *
- *      //类CommonJS导入 (CommonJS)
- *      var a=require('a');
- *
- *      //类CommonJS导出 (CommonJS)
- *      exports.say=function(){};
- * });
- *
- * ******************************************************/
+ **/
 (function (owner) {
 
     /**
@@ -570,8 +545,8 @@
      */
     var packageTable = {};
 
-    owner.resovleUri = function (uri) {
-        return resovleUri(uri, location.href);
+    owner.resovleUri = function (uri,baseUri) {
+        return resovleUri(uri, baseUri||location.href);
     };
 
     owner.alias = aliasTable;
