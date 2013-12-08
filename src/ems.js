@@ -547,14 +547,14 @@
 	 */
     owner.config = function (option) {
         option = option || {};
-        option.alias = option.alias || {};
+        option.alias = option.alias || option.paths || {};
         each(option.alias, function (name, value) {//防止覆盖已添加的别名
             aliasTable[name] = value;
         });
         option.packages=option.packages||[];
-        each(option.packages, function (key, value) {//防止覆盖已添加的包
-            value.name=value.name||key;
-            packageTable[key]=value;
+        each(option.packages, function (name, value) {//防止覆盖已添加的包
+            value.name=value.name||name;
+            packageTable[value.name]=value;
         });
         extension = extension || option.extension;
     };
