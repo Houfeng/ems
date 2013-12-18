@@ -476,6 +476,7 @@
      * 匹配代码内部的类CommonJs的依赖方式
      */
     function matchRequire(src) {
+        src=src.replace(/\/\*[\w\W]*?\*\//gm, ';').replace(/\/\/.*/gi, ';');
         var rs = [];
         var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]|\.]/gm;
         var mh = null;
