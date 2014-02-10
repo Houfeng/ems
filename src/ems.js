@@ -1,6 +1,6 @@
 /**
  *
- * EMS(IMP) v0.9.2
+ * EMS(IMP) v0.9.8
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -148,14 +148,17 @@
     function bindLoadEvent(element, handler) {
         if (!element || !handler) return;
         //早期的Safari不支持link的load事件，则直接回调handler
-        if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
+        if ((typeof HTMLLinkElement !== 'undefined')
+            && (element instanceof HTMLLinkElement)) {
             handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
             return;
         }
         var loadEventName = element.attachEvent ? "readystatechange" : "load";
         bindEvent(element, loadEventName, function () {
             var readyState = element.readyState || "loaded";
-            if (readyState == "loaded" || readyState == "interactive" || readyState == "complete") {
+            if (readyState == "loaded"
+                || readyState == "interactive"
+                || readyState == "complete") {
                 handler.apply(element, arguments || []);
             }
         });
@@ -228,7 +231,7 @@
     /**
      * 加载一个文件
      */
-    function loadOne(uri, callback) {
+    function _loadOne(uri, callback) {
         if (moduleTable[uri] == null) {
             moduleTable[uri] = new ModuleContext(uri);
         }
@@ -256,6 +259,37 @@
         });
         //
         appendToDom(moduleTable[uri].element);
+    };
+
+    function loadOne(uri, callback) {
+        if (!contains(uri, '!')) {
+            return _loadOne(uri, callback);
+        } else {
+            //带插件的URL
+            var splitIndex = uri.lastIndexOf('!');
+            var uriParts1 = uri.substring(0, splitIndex);
+            var uriParts2 = uri.substring(splitIndex + 1);
+            if (moduleTable[uriParts2] && moduleTable[uriParts2].loaded) {
+                var rs = moduleTable[uriParts2].exports;
+                if (callback) callback(rs);
+                return rs;
+            }
+            //处理使用插件的引用
+            return loadOne(uriParts1, function (plugin) {
+                if (!plugin || !plugin.load) return;
+                var onLoadCallback = function (rs) {
+                    moduleTable[uriParts2] = {
+                        exports: rs,
+                        loaded: true
+                    };
+                    if (callback) callback(rs);
+                };
+                onLoadCallback.fromText = onLoadCallback;
+                onLoadCallback.error = onLoadCallback;
+                //调用插件方法。
+                plugin.load(uriParts2, moduleTable[uriParts1].require, onLoadCallback, owner.config());
+            });
+        }
     };
 
     /**
@@ -305,8 +339,11 @@
     function getModuleExportsFromCache(uriList) {
         var moduleExports = [];
         each(uriList, function (i, uri) {
-            if (moduleTable[uri]) {
+            var uriForPlugin = uri.split('!')[1];//带插件的URL
+            if (uri !== null && moduleTable[uri]) {
                 moduleExports.push(moduleTable[uri].exports);
+            } if (uriForPlugin != null && moduleTable[uriForPlugin]) {//带插件的URL
+                moduleExports.push(moduleTable[uriForPlugin].exports);
             }
         });
         return moduleExports;
@@ -323,7 +360,9 @@
      * 是否开头匹配一种URI协议
      */
     function startWithUriProtocol(uri) {
-        if (startWith(uri, 'http://') || startWith(uri, 'https://') || startWith(uri, 'file://')) {
+        if (startWith(uri, 'http://')
+            || startWith(uri, 'https://')
+            || startWith(uri, 'file://')) {
             return true;
         } else {
             var regx = /^\S+?:\/\//ig;
@@ -341,8 +380,12 @@
     /**
      * 转换路径为绝对路径
      */
-    function resovleUri(uri, baseUri) {
-        if (!uri || !baseUri || startWithUriProtocol(uri) || startWithPathRoot(uri) || isSystemModule(uri)) {
+    function _resovleUri(uri, baseUri) {
+        if (isNull(uri)
+            || isNull(baseUri)
+            || startWithUriProtocol(uri)
+            || startWithPathRoot(uri)
+            || isSystemModule(uri)) {
             return uri;
         }
         baseUri = baseUri.split('?')[0].split('#')[0];
@@ -353,7 +396,8 @@
         each(uriParts, function (i, part) {
             if (part == '..') {
                 newUriParts.pop();
-            } else if (part == '.') { //No Handle
+            } else if (part == '.') {
+                //No Handle
             } else {
                 newUriParts.push(part);
             }
@@ -361,13 +405,31 @@
         return newUriParts.join('/') + (uriHash ? '#' + uriHash : '');
     };
 
+    function resovleUri(_uri, baseUri, notHandleExt) {
+        if (isNull(_uri) || isNull(baseUri)) return _uri;
+        var uriParts = _uri.split('!');//处理带插件URI
+        var rs = [];
+        each(uriParts, function (i, part) {
+            var uri = aliasTable[part] || part;
+            uri = handlePackages(uri);
+            uri = _resovleUri(uri, baseUri);
+            if (!notHandleExt) uri = handleExtension(uri);
+            rs.push(uri);
+        });
+        return rs.join('!');
+    };
+
     /**
      * 处理默认扩展名
      */
     function handleExtension(uri) {
         if (isSystemModule(uri)) return uri;
-        var fileName = uri.substring(uri.lastIndexOf('/'), uri.length);
-        if (!contains(fileName, '?') && !contains(fileName, '#') && !contains(fileName, '.')) {
+        var fileName = uri.substring(uri.lastIndexOf('/') + 1, uri.length);
+        if (uri != ""
+            && !contains(uri, '?')
+            && !contains(uri, '#')
+            && fileName != ""
+            && !contains(fileName, '.')) {
             uri += (extension || ".js");
         }
         return uri;
@@ -385,6 +447,12 @@
             if (part1 == pack.name) {
                 part1 = pack.location || part1;
                 part2 = part2 || pack.main || '';
+                if (part1[part1.length - 1] == '/') {
+                    part1 = part1.substring(0, part1.lastIndexOf('/'));
+                }
+                if (part2[0] == '/') {
+                    part2 = part2.substring(1, part2.length);
+                }
                 uri = part1 + '/' + part2;
             }
         });
@@ -410,10 +478,7 @@
         deps = stringToStringArray(deps);
         var absUriList = [];
         each(deps, function (i, dep) {
-            var uri = aliasTable[dep] || dep;
-            uri = handlePackages(uri);
-            uri = handleExtension(uri);
-            uri = resovleUri(uri, baseUri);
+            var uri = resovleUri(dep, baseUri);
             absUriList.push(uri);
         });
         return absUriList;
@@ -423,15 +488,25 @@
      * 模块上下文件对象
      */
     function ModuleContext(uri) {
-        var moduleUri = this.uri = this.id = uri || '/';
-        this.resovleUri = function (_uri, baseUri) {
-            return resovleUri(_uri, baseUri || moduleUri);
+        var self = this;
+        var moduleUri = self.uri = self.id = uri || '/';
+        self.resovleUri = function (_uri, baseUri, notHandleExt) {
+            return resovleUri(_uri, baseUri || moduleUri, notHandleExt);
         };
-        this.require = function (deps, callback) {
+        self.require = function (deps, callback) {
             return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
         };
-        this.unrequire = function (deps) {
+        self.unrequire = function (deps) {
             return owner.unload(deps, uri);
+        };
+        self.require.toUrl = self.require.resovleUri = function (_uri, baseUri, notHandleExt) {
+            return self.resovleUri(_uri, baseUri, notHandleExt);
+        };
+        self.require.defined = function (_uri) {
+            return moduleTable[_uri].loaded;
+        };
+        self.require.specified = function (_uri) {
+            return moduleTable[_uri].loaded || moduleTable[_uri].loadCallbacks != null;
         };
         this.exports = {};
         this.declare = null;
@@ -476,7 +551,7 @@
      * 匹配代码内部的类CommonJs的依赖方式
      */
     function matchRequire(src) {
-        src=src.replace(/\/\*[\w\W]*?\*\//gm, ';').replace(/\/\/.*/gi, ';');
+        src = src.replace(/\/\*[\w\W]*?\*\//gm, ';').replace(/^\/\/.*/gi, ';');
         var rs = [];
         var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]|\.]/gm;
         var mh = null;
@@ -522,6 +597,7 @@
      * 配置
      */
     owner.config = function (option) {
+        if (option === null) return _option;
         option = option || {};
         option.alias = option.alias || option.paths || {};
         each(option.alias, function (name, value) {//防止覆盖已添加的别名
@@ -533,7 +609,10 @@
             packageTable[value.name] = value;
         });
         extension = extension || option.extension;
+        _option = option;
     };
+
+    var _option = {};
 
     /**
      * 别名列表
@@ -546,8 +625,8 @@
      */
     var packageTable = {};
 
-    owner.resovleUri = function (uri,baseUri) {
-        return resovleUri(uri, baseUri||location.href);
+    owner.resovleUri = function (uri, baseUri) {
+        return resovleUri(uri, baseUri || location.href);
     };
 
     owner.alias = aliasTable;
