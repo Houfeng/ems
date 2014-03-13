@@ -1,6 +1,6 @@
 /**
  *
- * EMS(IMP) v0.9.8
+ * EMS(IMP) v0.9.9
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -365,8 +365,9 @@
             || startWith(uri, 'file://')) {
             return true;
         } else {
-            var regx = /^\S+?:\/\//ig;
-            return regx.test(uri);
+            var regx1 = /^\S+?:\//ig;
+            var regx2 = /^\S+?:\\/ig;
+            return regx1.test(uri)||regx2.test(uri);
         }
     };
 
