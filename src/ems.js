@@ -10,21 +10,21 @@
  * ems 作为 "EMD" 的实现标准范本; 完全符合 "EMD规范";
  *
  **/
-(function (owner) {
+(function(owner) {
 
     /**
      * 检查是否为null或undefined
      */
     function isNull(obj) {
         return (obj === null) || (typeof obj === 'undefined');
-    };
+    }
 
     /**
      * 检查是否是数组
      */
     function isArray(obj) {
         return (obj instanceof Array) || (obj && obj.length && obj[0]);
-    };
+    }
 
     /**
      * 遍历数组或对象，return === continue , return object === break
@@ -35,31 +35,31 @@
             var listLength = list.length;
             for (var i = 0; i < listLength; i++) {
                 if (isNull(list[i])) continue;
-                var rs = handler.call(list[i], i, list[i]);
-                if (!isNull(rs)) return rs;
+                var rs1 = handler.call(list[i], i, list[i]);
+                if (!isNull(rs1)) return rs1;
             }
         } else {
             for (var key in list) {
                 if (isNull(list[key])) continue;
-                var rs = handler.call(list[key], key, list[key]);
-                if (!isNull(rs)) return rs;
+                var rs2 = handler.call(list[key], key, list[key]);
+                if (!isNull(rs2)) return rs2;
             }
         }
-    };
+    }
 
     /**
      * 从字符串开头匹配
      */
     function startWith(str1, str2) {
-        return str1 && str2 && str1.indexOf(str2) == 0;
-    };
+        return str1 && str2 && str1.indexOf(str2) === 0;
+    }
 
     /**
      * 是否包含
      */
     function contains(str1, str2) {
         return str1 && str2 && str1.indexOf(str2) > -1;
-    };
+    }
 
     /**
      * 创建一个脚本元素
@@ -71,7 +71,7 @@
         scriptElement.defer = true;
         scriptElement.type = "text/javascript";
         return scriptElement;
-    };
+    }
 
     /**
      * 创建一个外联样式元素
@@ -82,36 +82,38 @@
         styleElement.type = "text/css";
         styleElement.rel = "stylesheet";
         return styleElement;
-    };
+    }
 
     /**
      * 取所有脚本元素
      */
     function getScriptElements() {
         return document.getElementsByTagName('script');
-    };
+    }
 
     /**
      * 获取启始模块或文件
      */
     function getMainFile() {
         var scripts = getScriptElements();
-        return each(scripts, function () {
+        return each(scripts,
+        function() {
             return this.getAttribute('data-main');
         });
-    };
+    }
 
     /**
      * 取正在执行的脚本
      */
     function getInteractiveScript() {
         var scripts = getScriptElements();
-        return each(scripts, function () {
+        return each(scripts,
+        function() {
             if (this.readyState === 'interactive') {
                 return this;
             }
         });
-    };
+    }
 
     /**
      * 元素容器
@@ -129,7 +131,7 @@
         }
         //将script添加到页面
         elementContainer.appendChild(element);
-    };
+    }
 
     /**
      * 处理事件监听器
@@ -140,7 +142,7 @@
         } else if (element.attachEvent) {
             element.attachEvent("on" + name, handler);
         }
-    };
+    }
 
     /**
      * 绑定load事件
@@ -148,21 +150,19 @@
     function bindLoadEvent(element, handler) {
         if (!element || !handler) return;
         //早期的Safari不支持link的load事件，则直接回调handler
-        if ((typeof HTMLLinkElement !== 'undefined')
-            && (element instanceof HTMLLinkElement)) {
+        if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
             handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
             return;
         }
-        var loadEventName = element.attachEvent ? "readystatechange" : "load";
-        bindEvent(element, loadEventName, function () {
+        var loadEventName = element.attachEvent ? "readystatechange": "load";
+        bindEvent(element, loadEventName,
+        function() {
             var readyState = element.readyState || "loaded";
-            if (readyState == "loaded"
-                || readyState == "interactive"
-                || readyState == "complete") {
+            if (readyState == "loaded" || readyState == "interactive" || readyState == "complete") {
                 handler.apply(element, arguments || []);
             }
         });
-    };
+    }
 
     /**
      * 加载缓存
@@ -194,12 +194,14 @@
         //清空currently
         currently = null;
         //处理模块静态依赖开始
-        moduleTable[uri].require(moduleTable[uri].deps, function () {
+        moduleTable[uri].require(moduleTable[uri].deps,
+        function() {
             var imports = arguments;
-            setTimeout(function () {
+            setTimeout(function() {
                 //处理类CommonJS方式的依赖开始
-                moduleTable[uri].require(moduleTable[uri].declareDeps, function () {
-                    setTimeout(function () {
+                moduleTable[uri].require(moduleTable[uri].declareDeps,
+                function() {
+                    setTimeout(function() {
                         if (moduleTable[uri].declare) {
                             var args = [];
                             for (var i = 0; i < imports.length; i++) {
@@ -215,24 +217,27 @@
                             moduleTable[uri].exports = retExports || moduleTable[uri].exports;
                         }
                         //
-                        each(moduleTable[uri].loadCallbacks, function () {
+                        each(moduleTable[uri].loadCallbacks,
+                        function() {
                             this(moduleTable[uri].exports);
                         });
                         if (owner.onLoad) owner.onLoad(moduleTable[uri]);
                         //
                         moduleTable[uri].loaded = true;
                         moduleTable[uri].loadCallbacks = null;
-                    }, 0);
+                    },
+                    0);
                 }); //处理类CommonJS方式的依赖结束
-            }, 0);
+            },
+            0);
         }); //处理模块静态依赖结束
-    };
+    }
 
     /**
      * 加载一个文件
      */
     function _loadOne(uri, callback) {
-        if (moduleTable[uri] == null) {
+        if (isNull(moduleTable[uri])) {
             moduleTable[uri] = new ModuleContext(uri);
         }
         //如果缓存中存在，直接回调;
@@ -241,17 +246,18 @@
             return moduleTable[uri].exports;
         }
         //如果缓存中不存在，并且回调链也已创建，则压入当前callback,然后返回，等待回调
-        if (moduleTable[uri].loadCallbacks != null) {
+        if (!isNull(moduleTable[uri].loadCallbacks)) {
             moduleTable[uri].loadCallbacks.push(callback);
             return;
-        };
+        }
         //如果缓存中不存在，并且回调链为NULL，则创建回调链，并压入当前callback
         moduleTable[uri].loadCallbacks = [];
         moduleTable[uri].loadCallbacks.push(callback);
         //创建无素
         moduleTable[uri].element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
         //绑定load事件,模块下载完成，执行完成define，会立即触发load
-        bindLoadEvent(moduleTable[uri].element, function () {
+        bindLoadEvent(moduleTable[uri].element,
+        function() {
             if (!moduleTable[uri].loaded && !moduleTable[uri].loading) {
                 var currently = currentlyQueque.shift() || {};
                 saveModule(uri, currently);
@@ -259,7 +265,7 @@
         });
         //
         appendToDom(moduleTable[uri].element);
-    };
+    }
 
     function loadOne(uri, callback) {
         if (!contains(uri, '!')) {
@@ -275,9 +281,10 @@
                 return rs;
             }
             //处理使用插件的引用
-            return loadOne(uriParts1, function (plugin) {
+            return loadOne(uriParts1,
+            function(plugin) {
                 if (!plugin || !plugin.load) return;
-                var onLoadCallback = function (rs) {
+                var onLoadCallback = function(rs) {
                     moduleTable[uriParts2] = {
                         exports: rs,
                         loaded: true
@@ -290,18 +297,20 @@
                 plugin.load(uriParts2, moduleTable[uriParts1].require, onLoadCallback, owner.config());
             });
         }
-    };
+    }
 
     /**
      * 加载一组文件
      */
-    owner.load = function (deps, callback, baseUri) {
+    owner.load = function(deps, callback, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
         var exportsList = [];
         var uriCount = 0;
         if (uriList && uriList.length > 0) {
-            each(uriList, function (i, uri) {
-                loadOne(uri, function () {
+            each(uriList,
+            function(i, uri) {
+                loadOne(uri,
+                function() {
                     uriCount += 1;
                     if (uriCount < uriList.length) return;
                     exportsList = getModuleExportsFromCache(uriList) || exportsList;
@@ -317,9 +326,10 @@
     /**
      * 卸载一组文件
      */
-    owner.unload = function (deps, baseUri) {
+    owner.unload = function(deps, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
-        each(uriList, function (i, uri) {
+        each(uriList,
+        function(i, uri) {
             if (moduleTable[uri]) {
                 moduleTable[uri].element.parentNode.removeChild(moduleTable[uri].element);
                 moduleTable[uri].exports = null;
@@ -338,55 +348,51 @@
      */
     function getModuleExportsFromCache(uriList) {
         var moduleExports = [];
-        each(uriList, function (i, uri) {
-            var uriForPlugin = uri.split('!')[1];//带插件的URL
+        each(uriList,
+        function(i, uri) {
+            var uriForPlugin = uri.split('!')[1]; //带插件的URL
             if (uri !== null && moduleTable[uri]) {
                 moduleExports.push(moduleTable[uri].exports);
-            } if (uriForPlugin != null && moduleTable[uriForPlugin]) {//带插件的URL
+            }
+            if (!isNull(uriForPlugin) && moduleTable[uriForPlugin]) { //带插件的URL
                 moduleExports.push(moduleTable[uriForPlugin].exports);
             }
         });
         return moduleExports;
-    };
+    }
 
     /**
      * 检查是不是系统模块
      */
     function isSystemModule(uri) {
         return (uri == 'require' || uri == 'exports' || uri == 'module');
-    };
+    }
 
     /**
      * 是否开头匹配一种URI协议
      */
     function startWithUriProtocol(uri) {
-        if (startWith(uri, 'http://')
-            || startWith(uri, 'https://')
-            || startWith(uri, 'file://')) {
+        if (startWith(uri, 'http://') || startWith(uri, 'https://') || startWith(uri, 'file://')) {
             return true;
         } else {
             var regx1 = /^\S+?:\//ig;
             var regx2 = /^\S+?:\\/ig;
-            return regx1.test(uri)||regx2.test(uri);
+            return regx1.test(uri) || regx2.test(uri);
         }
-    };
+    }
 
     /**
      * 是否开头匹配根路径
      */
     function startWithPathRoot(uri) {
         return startWith(uri, '/') || startWith(uri, '\\');
-    };
+    }
 
     /**
      * 转换路径为绝对路径
      */
     function _resovleUri(uri, baseUri) {
-        if (isNull(uri)
-            || isNull(baseUri)
-            || startWithUriProtocol(uri)
-            || startWithPathRoot(uri)
-            || isSystemModule(uri)) {
+        if (isNull(uri) || isNull(baseUri) || startWithUriProtocol(uri) || startWithPathRoot(uri) || isSystemModule(uri)) {
             return uri;
         }
         baseUri = baseUri.split('?')[0].split('#')[0];
@@ -394,7 +400,8 @@
         var uriParts = uri.split('#')[0].split('/');
         var uriHash = uri.split('#')[1];
         var newUriParts = baseDir.length > 0 ? baseDir.split('/') : [];
-        each(uriParts, function (i, part) {
+        each(uriParts,
+        function(i, part) {
             if (part == '..') {
                 newUriParts.pop();
             } else if (part == '.') {
@@ -403,14 +410,15 @@
                 newUriParts.push(part);
             }
         });
-        return newUriParts.join('/') + (uriHash ? '#' + uriHash : '');
-    };
+        return newUriParts.join('/') + (uriHash ? '#' + uriHash: '');
+    }
 
     function resovleUri(_uri, baseUri, notHandleExt) {
         if (isNull(_uri) || isNull(baseUri)) return _uri;
-        var uriParts = _uri.split('!');//处理带插件URI
+        var uriParts = _uri.split('!'); //处理带插件URI
         var rs = [];
-        each(uriParts, function (i, part) {
+        each(uriParts,
+        function(i, part) {
             var uri = aliasTable[part] || part;
             uri = handlePackages(uri);
             uri = _resovleUri(uri, baseUri);
@@ -418,7 +426,7 @@
             rs.push(uri);
         });
         return rs.join('!');
-    };
+    }
 
     /**
      * 处理默认扩展名
@@ -426,15 +434,11 @@
     function handleExtension(uri) {
         if (isSystemModule(uri)) return uri;
         var fileName = uri.substring(uri.lastIndexOf('/') + 1, uri.length);
-        if (uri != ""
-            && !contains(uri, '?')
-            && !contains(uri, '#')
-            && fileName != ""
-            && !contains(fileName, '.')) {
+        if (!isNull(uri) && !isNull(fileName) && uri !== "" && !contains(uri, '?') && !contains(uri, '#') && fileName !== "" && !contains(fileName, '.')) {
             uri += (extension || ".js");
         }
         return uri;
-    };
+    }
 
     /**
      * 处理包
@@ -444,7 +448,8 @@
         if (index < 0) index = uri.length;
         var part1 = uri.substr(0, index);
         var part2 = uri.substr(index + 1, uri.length);
-        each(packageTable, function (name, pack) {
+        each(packageTable,
+        function(name, pack) {
             if (part1 == pack.name) {
                 part1 = pack.location || part1;
                 part2 = part2 || pack.main || '';
@@ -458,18 +463,18 @@
             }
         });
         return uri;
-    };
+    }
 
     /**
      * 字符串转为字符串数组
      */
     function stringToStringArray(str) {
-        if (str == null) return [];
+        if (isNull(str)) return [];
         if ((typeof str) == 'string') {
             str = [str];
         }
         return str;
-    };
+    }
 
     /**
      * 转换一组依赖为绝对路径
@@ -478,12 +483,13 @@
         baseUri = baseUri || location.href;
         deps = stringToStringArray(deps);
         var absUriList = [];
-        each(deps, function (i, dep) {
+        each(deps,
+        function(i, dep) {
             var uri = resovleUri(dep, baseUri);
             absUriList.push(uri);
         });
         return absUriList;
-    };
+    }
 
     /**
      * 模块上下文件对象
@@ -491,29 +497,29 @@
     function ModuleContext(uri) {
         var self = this;
         var moduleUri = self.uri = self.id = uri || '/';
-        self.resovleUri = function (_uri, baseUri, notHandleExt) {
+        self.resovleUri = function(_uri, baseUri, notHandleExt) {
             return resovleUri(_uri, baseUri || moduleUri, notHandleExt);
         };
-        self.require = function (deps, callback) {
+        self.require = function(deps, callback) {
             return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
         };
-        self.unrequire = function (deps) {
+        self.unrequire = function(deps) {
             return owner.unload(deps, uri);
         };
-        self.require.toUrl = self.require.resovleUri = function (_uri, baseUri, notHandleExt) {
+        self.require.toUrl = self.require.resovleUri = function(_uri, baseUri, notHandleExt) {
             return self.resovleUri(_uri, baseUri, notHandleExt);
         };
-        self.require.defined = function (_uri) {
+        self.require.defined = function(_uri) {
             return moduleTable[_uri].loaded;
         };
-        self.require.specified = function (_uri) {
-            return moduleTable[_uri].loaded || moduleTable[_uri].loadCallbacks != null;
+        self.require.specified = function(_uri) {
+            return moduleTable[_uri].loaded || !isNull(moduleTable[_uri].loadCallbacks);
         };
         this.exports = {};
         this.declare = null;
         this.deps = null;
         this.loaded = false;
-    };
+    }
 
     /**
      * 当前加载完成的模块的“依赖表”及“声明”栈；
@@ -546,7 +552,7 @@
             };
         }
         return currently;
-    };
+    }
 
     /**
      * 匹配代码内部的类CommonJs的依赖方式
@@ -562,19 +568,19 @@
             }
         }
         return rs;
-    };
+    }
 
     /**
      * 定义一个模块
      * ems符合EMD规范(不对持moduleId), define还保留moduleId参数是为了兼容AMD规范模块，但在EMD中id将被忽略；
      */
-    owner.define = function (_moduleId, _moduleDeps, _moduleDeclare) {
+    owner.define = function(_moduleId, _moduleDeps, _moduleDeclare) {
         var currently = createCurrently(_moduleId, _moduleDeps, _moduleDeclare);
         if (currently) {
             //如果模块是一个JSON对象
             if (typeof currently.moduleDeclare != 'function') {
                 var obj = currently.moduleDeclare;
-                currently.moduleDeclare = function () {
+                currently.moduleDeclare = function() {
                     return obj;
                 };
             }
@@ -597,15 +603,17 @@
     /**
      * 配置
      */
-    owner.config = function (option) {
+    owner.config = function(option) {
         if (option === null) return _option;
         option = option || {};
         option.alias = option.alias || option.paths || {};
-        each(option.alias, function (name, value) {//防止覆盖已添加的别名
+        each(option.alias,
+        function(name, value) { //防止覆盖已添加的别名
             aliasTable[name] = value;
         });
         option.packages = option.packages || [];
-        each(option.packages, function (name, value) {//防止覆盖已添加的包
+        each(option.packages,
+        function(name, value) { //防止覆盖已添加的包
             value.name = value.name || name;
             packageTable[value.name] = value;
         });
@@ -626,7 +634,7 @@
      */
     var packageTable = {};
 
-    owner.resovleUri = function (uri, baseUri) {
+    owner.resovleUri = function(uri, baseUri) {
         return resovleUri(uri, baseUri || location.href);
     };
 
@@ -650,7 +658,7 @@
      * 加载启始模块或文件
      */
     var mainFile = getMainFile();
-    if (mainFile && mainFile != '') {
+    if (!isNull(mainFile) && mainFile !== '') {
         owner.load(mainFile);
     }
 })(this.ems = this.imp = {});
