@@ -1,6 +1,6 @@
 /**
  *
- * EMS(IMP) v0.9.9
+ * EMS(IMP) v1.0.0
  * Easy Module System: 简洁、易用的模块系统
  * 作者：侯锋
  * 邮箱：admin@xhou.net
@@ -60,7 +60,15 @@
     function contains(str1, str2) {
         return str1 && str2 && str1.indexOf(str2) > -1;
     }
-
+    
+    /**
+     * 替换所有
+     **/
+    function replaceAll (str, str1, str2) {
+        if (isNull(str)) return str;
+        return str.replace(new RegExp(str1, 'g'), str2);
+    }
+    
     /**
      * 创建一个脚本元素
      */
@@ -395,6 +403,10 @@
         if (isNull(uri) || isNull(baseUri) || startWithUriProtocol(uri) || startWithPathRoot(uri) || isSystemModule(uri)) {
             return uri;
         }
+        //替换Window下的的路径分隔符
+        uri = replaceAll(uri,'\\\\','/');
+        baseUri = replaceAll(baseUri,'\\\\','/');
+        //
         baseUri = baseUri.split('?')[0].split('#')[0];
         var baseDir = baseUri.substring(0, baseUri.lastIndexOf('/'));
         var uriParts = uri.split('#')[0].split('/');
