@@ -1,13 +1,11 @@
-###EMS(IMP)
+###emsjs
 ```
-+ Easy Module System: 简洁、易用的模块系统; 
-+ ems 全称为 "Easy Module System" 他还有一个别名叫: "imp"; 
-+ ems 作为 "EMD" 的标准实现范本; 完全符合 "EMD规范"; 
++ emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容所有主流浏览器;
 ```
 
 ###最新版本 
 ```
-+  v1.0.0
++  v1.0.1
 ```
 
 ###支持
@@ -27,16 +25,9 @@
 + 邮件组：emsjs@googlegroups.com
 ```
 
-###EMD 规范 
-```
-+ EMD 全称为 "Easy Module Definition"; 
-+ EMD 是AMD规范的子集,所以EDM只能写AMD中所谓的“匿名模块”；
-+ 符合EMD的模块可以，直接在实现AMD的模块系统中加载使用；
-```
-
 #####规范定义
 ```javascript
-define([deps...<require>,<exports>,<module>],
+define([id],[deps...<require>,<exports>,<module>],
     function(... <require>,<exports>,<module>){
 
     //动态导入依赖 (AMD)
@@ -82,5 +73,3 @@ define([deps...<require>,<exports>,<module>],
 </script>
 
 ````
-
-

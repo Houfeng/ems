@@ -1,13 +1,11 @@
 /**
  *
- * EMS(IMP) v1.0.0
- * Easy Module System: 简洁、易用的模块系统
+ * emsjs v1.0.1
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
  *
- * ems 全称为 "Easy Module System" 他还有一个别名叫: "imp";
- * ems 作为 "EMD" 的实现标准范本; 完全符合 "EMD规范";
+ * emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容所有主流浏览器。
  *
  **/
 (function(owner) {
@@ -60,15 +58,15 @@
     function contains(str1, str2) {
         return str1 && str2 && str1.indexOf(str2) > -1;
     }
-    
+
     /**
      * 替换所有
      **/
-    function replaceAll (str, str1, str2) {
+    function replaceAll(str, str1, str2) {
         if (isNull(str)) return str;
         return str.replace(new RegExp(str1, 'g'), str2);
     }
-    
+
     /**
      * 创建一个脚本元素
      */
@@ -104,8 +102,7 @@
      */
     function getMainFile() {
         var scripts = getScriptElements();
-        return each(scripts,
-        function() {
+        return each(scripts, function() {
             return this.getAttribute('data-main');
         });
     }
@@ -115,8 +112,7 @@
      */
     function getInteractiveScript() {
         var scripts = getScriptElements();
-        return each(scripts,
-        function() {
+        return each(scripts, function() {
             if (this.readyState === 'interactive') {
                 return this;
             }
@@ -162,9 +158,8 @@
             handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
             return;
         }
-        var loadEventName = element.attachEvent ? "readystatechange": "load";
-        bindEvent(element, loadEventName,
-        function() {
+        var loadEventName = element.attachEvent ? "readystatechange" : "load";
+        bindEvent(element, loadEventName, function() {
             var readyState = element.readyState || "loaded";
             if (readyState == "loaded" || readyState == "interactive" || readyState == "complete") {
                 handler.apply(element, arguments || []);
@@ -202,13 +197,11 @@
         //清空currently
         currently = null;
         //处理模块静态依赖开始
-        moduleTable[uri].require(moduleTable[uri].deps,
-        function() {
+        moduleTable[uri].require(moduleTable[uri].deps, function() {
             var imports = arguments;
             setTimeout(function() {
                 //处理类CommonJS方式的依赖开始
-                moduleTable[uri].require(moduleTable[uri].declareDeps,
-                function() {
+                moduleTable[uri].require(moduleTable[uri].declareDeps, function() {
                     setTimeout(function() {
                         if (moduleTable[uri].declare) {
                             var args = [];
@@ -226,18 +219,16 @@
                         }
                         //
                         each(moduleTable[uri].loadCallbacks,
-                        function() {
-                            this(moduleTable[uri].exports);
-                        });
+                            function() {
+                                this(moduleTable[uri].exports);
+                            });
                         if (owner.onLoad) owner.onLoad(moduleTable[uri]);
                         //
                         moduleTable[uri].loaded = true;
                         moduleTable[uri].loadCallbacks = null;
-                    },
-                    0);
+                    }, 0);
                 }); //处理类CommonJS方式的依赖结束
-            },
-            0);
+            }, 0);
         }); //处理模块静态依赖结束
     }
 
@@ -264,8 +255,7 @@
         //创建无素
         moduleTable[uri].element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
         //绑定load事件,模块下载完成，执行完成define，会立即触发load
-        bindLoadEvent(moduleTable[uri].element,
-        function() {
+        bindLoadEvent(moduleTable[uri].element, function() {
             if (!moduleTable[uri].loaded && !moduleTable[uri].loading) {
                 var currently = currentlyQueque.shift() || {};
                 saveModule(uri, currently);
@@ -289,8 +279,7 @@
                 return rs;
             }
             //处理使用插件的引用
-            return loadOne(uriParts1,
-            function(plugin) {
+            return loadOne(uriParts1, function(plugin) {
                 if (!plugin || !plugin.load) return;
                 var onLoadCallback = function(rs) {
                     moduleTable[uriParts2] = {
@@ -315,10 +304,8 @@
         var exportsList = [];
         var uriCount = 0;
         if (uriList && uriList.length > 0) {
-            each(uriList,
-            function(i, uri) {
-                loadOne(uri,
-                function() {
+            each(uriList, function(i, uri) {
+                loadOne(uri, function() {
                     uriCount += 1;
                     if (uriCount < uriList.length) return;
                     exportsList = getModuleExportsFromCache(uriList) || exportsList;
@@ -336,8 +323,7 @@
      */
     owner.unload = function(deps, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
-        each(uriList,
-        function(i, uri) {
+        each(uriList, function(i, uri) {
             if (moduleTable[uri]) {
                 moduleTable[uri].element.parentNode.removeChild(moduleTable[uri].element);
                 moduleTable[uri].exports = null;
@@ -356,8 +342,7 @@
      */
     function getModuleExportsFromCache(uriList) {
         var moduleExports = [];
-        each(uriList,
-        function(i, uri) {
+        each(uriList, function(i, uri) {
             var uriForPlugin = uri.split('!')[1]; //带插件的URL
             if (uri !== null && moduleTable[uri]) {
                 moduleExports.push(moduleTable[uri].exports);
@@ -404,16 +389,15 @@
             return uri;
         }
         //替换Window下的的路径分隔符
-        uri = replaceAll(uri,'\\\\','/');
-        baseUri = replaceAll(baseUri,'\\\\','/');
+        uri = replaceAll(uri, '\\\\', '/');
+        baseUri = replaceAll(baseUri, '\\\\', '/');
         //
         baseUri = baseUri.split('?')[0].split('#')[0];
         var baseDir = baseUri.substring(0, baseUri.lastIndexOf('/'));
         var uriParts = uri.split('#')[0].split('/');
         var uriHash = uri.split('#')[1];
         var newUriParts = baseDir.length > 0 ? baseDir.split('/') : [];
-        each(uriParts,
-        function(i, part) {
+        each(uriParts, function(i, part) {
             if (part == '..') {
                 newUriParts.pop();
             } else if (part == '.') {
@@ -422,15 +406,14 @@
                 newUriParts.push(part);
             }
         });
-        return newUriParts.join('/') + (uriHash ? '#' + uriHash: '');
+        return newUriParts.join('/') + (uriHash ? '#' + uriHash : '');
     }
 
     function resovleUri(_uri, baseUri, notHandleExt) {
         if (isNull(_uri) || isNull(baseUri)) return _uri;
         var uriParts = _uri.split('!'); //处理带插件URI
         var rs = [];
-        each(uriParts,
-        function(i, part) {
+        each(uriParts, function(i, part) {
             var uri = aliasTable[part] || part;
             uri = handlePackages(uri);
             uri = _resovleUri(uri, baseUri);
@@ -460,8 +443,7 @@
         if (index < 0) index = uri.length;
         var part1 = uri.substr(0, index);
         var part2 = uri.substr(index + 1, uri.length);
-        each(packageTable,
-        function(name, pack) {
+        each(packageTable, function(name, pack) {
             if (part1 == pack.name) {
                 part1 = pack.location || part1;
                 part2 = part2 || pack.main || '';
@@ -495,8 +477,7 @@
         baseUri = baseUri || location.href;
         deps = stringToStringArray(deps);
         var absUriList = [];
-        each(deps,
-        function(i, dep) {
+        each(deps, function(i, dep) {
             var uri = resovleUri(dep, baseUri);
             absUriList.push(uri);
         });
@@ -545,6 +526,7 @@
         var currently = null;
         if (_moduleDeps && _moduleDeclare) { //define(a,b,c);
             currently = {
+                moduleId: _moduleId,
                 moduleDeps: _moduleDeps,
                 moduleDeclare: _moduleDeclare
             };
@@ -619,13 +601,11 @@
         if (option === null) return _option;
         option = option || {};
         option.alias = option.alias || option.paths || {};
-        each(option.alias,
-        function(name, value) { //防止覆盖已添加的别名
+        each(option.alias, function(name, value) { //防止覆盖已添加的别名
             aliasTable[name] = value;
         });
         option.packages = option.packages || [];
-        each(option.packages,
-        function(name, value) { //防止覆盖已添加的包
+        each(option.packages, function(name, value) { //防止覆盖已添加的包
             value.name = value.name || name;
             packageTable[value.name] = value;
         });

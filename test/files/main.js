@@ -1,4 +1,4 @@
-module('EMS(IMP)');
+module('EMS ');
 
 test('系统对象', function() {
 	notEqual(ems, null, '全局ems对象');
