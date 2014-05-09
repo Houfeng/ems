@@ -11,7 +11,6 @@
 ### 许可协议
 >[请您遵守LGPL协议，（点击可查看LGPL协议）](http://www.gnu.org/licenses/lgpl.html)
 
-
 ###支持
 ```
 + IE
