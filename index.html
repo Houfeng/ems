@@ -17,7 +17,7 @@
     <div class="wrapper">
       <header>
         <h1 class="header">emsjs</h1>
-        <p class="header">Easy Module System: 简洁、易用的模块系统</p>
+        <p class="header">emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容所有主流浏览器;</p>
 
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/Houfeng/ems/zipball/master">Download ZIP</a></li>
@@ -31,17 +31,15 @@
       </header>
       <section>
         <h3>
-<a name="emsimp" class="anchor" href="#emsimp"><span class="octicon octicon-link"></span></a>EMS(IMP)</h3>
+<a name="emsjs" class="anchor" href="#emsjs"><span class="octicon octicon-link"></span></a>emsjs</h3>
 
-<pre><code>+ Easy Module System: 简洁、易用的模块系统; 
-+ ems 全称为 "Easy Module System" 他还有一个别名叫: "imp"; 
-+ ems 作为 "EMD" 的标准实现范本; 完全符合 "EMD规范"; 
+<pre><code>+ emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容所有主流浏览器;
 </code></pre>
 
 <h3>
 <a name="%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC" class="anchor" href="#%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC"><span class="octicon octicon-link"></span></a>最新版本</h3>
 
-<pre><code>+  v0.9.9
+<pre><code>+  v1.0.1
 </code></pre>
 
 <h3>
@@ -63,18 +61,10 @@
 + 邮件组：emsjs@googlegroups.com
 </code></pre>
 
-<h3>
-<a name="emd-%E8%A7%84%E8%8C%83" class="anchor" href="#emd-%E8%A7%84%E8%8C%83"><span class="octicon octicon-link"></span></a>EMD 规范</h3>
-
-<pre><code>+ EMD 全称为 "Easy Module Definition"; 
-+ EMD 是AMD规范的子集,所以EDM只能写AMD中所谓的“匿名模块”；
-+ 符合EMD的模块可以，直接在实现AMD的模块系统中加载使用；
-</code></pre>
-
 <h5>
 <a name="%E8%A7%84%E8%8C%83%E5%AE%9A%E4%B9%89" class="anchor" href="#%E8%A7%84%E8%8C%83%E5%AE%9A%E4%B9%89"><span class="octicon octicon-link"></span></a>规范定义</h5>
 
-<div class="highlight highlight-javascript"><pre><span class="nx">define</span><span class="p">([</span><span class="nx">deps</span><span class="p">...</span><span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">],</span>
+<div class="highlight highlight-javascript"><pre><span class="nx">define</span><span class="p">([</span><span class="nx">id</span><span class="p">],[</span><span class="nx">deps</span><span class="p">...</span><span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">],</span>
     <span class="kd">function</span><span class="p">(...</span> <span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">){</span>
 
     <span class="c1">//动态导入依赖 (AMD)</span>
