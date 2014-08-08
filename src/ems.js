@@ -443,6 +443,7 @@
                             modules[uri].executed = true;
                             return modules[uri].exports;
                         };
+                        modules[uri].execute();
                         //处理回调列表
                         each(modules[uri].loadCallbacks, function() {
                             this(modules[uri].exports);
