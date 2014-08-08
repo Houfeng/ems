@@ -243,14 +243,17 @@
     var modules = owner.modules = {
         'require': {
             loaded: true,
+            executed: true,
             exports: 'require'
         },
         'exports': {
             loaded: true,
+            executed: true,
             exports: 'exports'
         },
         'module': {
             loaded: true,
+            executed: true,
             exports: 'module'
         }
     };
@@ -403,7 +406,7 @@
     /**
      * 保存模块
      */
-    function saveModule(uri, context, deferredExecute) {
+    function saveModule(uri, context) {
         if (!modules[uri]) return;
         modules[uri].loading = true;
         modules[uri].deps = context.deps;
@@ -413,29 +416,33 @@
         context = null;
         //处理模块静态依赖开始
         modules[uri].require(modules[uri].deps, function() {
-            var imports = arguments; //将作为 define 的参数
+            modules[uri].imports = arguments || []; //将作为 define 的参数
             async(function() {
                 //处理类CommonJS方式的依赖开始
                 modules[uri].require(modules[uri].factoryDeps, function() {
                     async(function() {
+                        var srcImports = modules[uri].imports;
+                        var dstImports = [];
+                        for (var i = 0; i < srcImports.length; i++) {
+                            if (srcImports[i] == 'require') srcImports[i] = modules[uri].require;
+                            if (srcImports[i] == 'exports') srcImports[i] = modules[uri].exports;
+                            if (srcImports[i] == 'module') srcImports[i] = modules[uri];
+                            dstImports.push(srcImports[i]);
+                        }
+                        dstImports.push(modules[uri].require);
+                        dstImports.push(modules[uri].exports);
+                        dstImports.push(modules[uri]);
+                        modules[uri].imports = dstImports;
                         //生成模块的待执行函数
                         modules[uri].execute = function() {
-                            if (isNull(modules[uri].factory)) return;
-                            var args = [];
-                            for (var i = 0; i < imports.length; i++) {
-                                if (imports[i] == 'require') imports[i] = modules[uri].require;
-                                if (imports[i] == 'exports') imports[i] = modules[uri].exports;
-                                if (imports[i] == 'module') imports[i] = modules[uri];
-                                args.push(imports[i]);
+                            if (modules[uri].executed || isNull(modules[uri].factory)) {
+                                return modules[uri].exports;
                             }
-                            args.push(modules[uri].require);
-                            args.push(modules[uri].exports);
-                            args.push(modules[uri]);
-                            var ret = modules[uri].factory.apply(modules[uri], args);
+                            var ret = modules[uri].factory.apply(modules[uri], modules[uri].imports);
                             modules[uri].exports = ret || modules[uri].exports;
+                            modules[uri].executed = true;
                             return modules[uri].exports;
                         };
-                        if (!deferredExecute) modules[uri].execute();
                         //处理回调列表
                         each(modules[uri].loadCallbacks, function() {
                             this(modules[uri].exports);
@@ -448,7 +455,7 @@
                         //清楚超时检查定时器
                         if (loadTimers[uri]) clearTimeout(loadTimers[uri]);
                     });
-                }); //处理类CommonJS方式的依赖结束
+                }); //处理类CommonJS方式的依赖结束，CommonJS 将延迟执行（在 x=require(...) 时执行）
             });
         }); //处理模块静态依赖结束
     }
@@ -461,7 +468,7 @@
         if (isNull(modules[uri])) {
             modules[uri] = new Module(uri);
         }
-        //如果缓存中存在，直接回调;
+        //如果加载完成就直接回调;
         if (modules[uri].loaded && callback) {
             callback(modules[uri].exports);
             return modules[uri].exports;
@@ -494,7 +501,6 @@
      * 加载一个模块，会检测是否使用了插件，内部调用 _loadOne
      **/
     function loadOne(uri, callback) {
-        //console.log("load: " + uri);
         if (!contains(uri, '!')) {
             return _loadOne(uri, callback);
         } else {
