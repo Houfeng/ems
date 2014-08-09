@@ -1,6 +1,6 @@
 /**
  *
- * emsjs v1.2.1
+ * emsjs v1.2.0
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -87,19 +87,10 @@
     }
 
     /**
-     * 清除注释
-     */
-    function removeComments(code) {
-        return code.replace(/(?:^|\n|\r)\s*\/\*[\s\S]*?\*\/\s*(?:\r|\n|$)/g, '\n')
-            .replace(/(?:^|\n|\r)\s*\/\/.*(?:\r|\n|$)/g, '\n');
-    }
-
-    /**
      * 匹配代码内部的类CommonJs的依赖方式
      */
     function matchRequire(src) {
         src = src.replace(/\/\*[\w\W]*?\*\//gm, ';').replace(/^\/\/.*/gi, ';');
-        src = removeComments(src);
         var foundArray = [];
         var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]|\.]/gm;
         var match = null;
@@ -244,23 +235,20 @@
      * 模块列表
      **/
     var modules = owner.modules = {
-        "require": {
-            id: "require",
+        'require': {
             loaded: true,
             executed: true,
-            exports: "require"
+            exports: 'require'
         },
-        "exports": {
-            id: "exports",
+        'exports': {
             loaded: true,
             executed: true,
-            exports: "exports"
+            exports: 'exports'
         },
-        "module": {
-            id: "module",
+        'module': {
             loaded: true,
             executed: true,
-            exports: "module"
+            exports: 'module'
         }
     };
 
@@ -429,45 +417,39 @@
         module.loading = true;
         applyLoadContextToModule(module, context);
         //处理模块静态依赖开始
-        module.load(module.deps, function() {
+        module.require(module.deps, function() {
             module.imports = arguments || []; //将作为 define 的参数
             async(function() {
                 //处理类CommonJS方式的依赖开始
-                module.load(module.factoryDeps, function() {
+                module.require(module.factoryDeps, function() {
                     async(function() {
+                        //处理传递给 factory 的参数
+                        var srcImports = module.imports;
+                        var dstImports = [];
+                        for (var i = 0; i < srcImports.length; i++) {
+                            if (srcImports[i] == 'require') srcImports[i] = module.require;
+                            if (srcImports[i] == 'exports') srcImports[i] = module.exports;
+                            if (srcImports[i] == 'module') srcImports[i] = module;
+                            dstImports.push(srcImports[i]);
+                        }
+                        dstImports.push(module.require);
+                        dstImports.push(module.exports);
+                        dstImports.push(module);
+                        module.imports = dstImports;
                         //生成模块的待执行函数
                         module.execute = function() {
                             if (module.executed || isNull(module.factory)) {
                                 return module.exports;
                             }
-                            //处理传递给 factory 的参数
-                            var srcImports = module.imports;
-                            var dstImports = [];
-                            for (var i = 0; i < srcImports.length; i++) {
-                                if (srcImports[i].id == 'require') {
-                                    dstImports.push(module.require);
-                                } else if (srcImports[i].id == 'exports') {
-                                    dstImports.push(module.exports);
-                                } else if (srcImports[i].id == 'module') {
-                                    dstImports.push(module);
-                                } else {
-                                    srcImports[i].execute();
-                                    dstImports.push(srcImports[i].exports);
-                                }
-                            }
-                            dstImports.push(module.require);
-                            dstImports.push(module.exports);
-                            dstImports.push(module);
-                            module.imports = dstImports;
-                            //
                             var returnObject = module.factory.apply(module, module.imports);
                             module.exports = returnObject || module.exports;
                             module.executed = true;
                             return module.exports;
                         };
+                        module.execute();
                         //处理回调列表
                         each(module.loadCallbacks, function(i, callback) {
-                            callback(module);
+                            callback(module.exports);
                         });
                         //检查并出发加载完成事件
                         if (owner.onLoad) owner.onLoad(module);
@@ -494,9 +476,9 @@
         }
         var module = modules[uri];
         //如果加载完成就直接回调;
-        if ((module.loading || module.loaded) && callback) {
-            callback(module);
-            return module;
+        if (module.loaded && callback) {
+            callback(module.exports);
+            return module.exports;
         }
         //如果缓存中不存在，并且回调链也已创建，则压入当前callback,然后返回，等待回调
         if (!isNull(module.loadCallbacks)) {
@@ -537,8 +519,8 @@
             //检查是否已加载
             var module = modules[moduleUri];
             if (module && module.loaded) {
-                if (callback) callback(module);
-                return module;
+                if (callback) callback(module.exports);
+                return module.exports;
             }
             //处理使用插件的引用
             return loadOne(pluginUri, function(plugin) {
@@ -546,7 +528,6 @@
                 var onLoadCallback = function(moduleExports) {
                     module = {
                         exports: moduleExports,
-                        executed: true,
                         loaded: true
                     };
                     if (callback) callback(moduleExports);
@@ -566,21 +547,21 @@
      */
     owner.load = function(deps, callback, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
-        var moduleList = [];
+        var exportsList = [];
         var uriCount = 0;
         if (uriList && uriList.length > 0) {
             each(uriList, function(i, uri) {
                 loadOne(uri, function() {
                     uriCount += 1;
                     if (uriCount < uriList.length) return;
-                    moduleList = getModulesFromCache(uriList) || moduleList;
-                    if (callback) callback.apply(moduleList, moduleList);
+                    exportsList = getModuleExportsFromCache(uriList) || exportsList;
+                    if (callback) callback.apply(exportsList, exportsList);
                 });
             });
         } else {
-            if (callback) callback.apply(moduleList, moduleList);
+            if (callback) callback.apply(exportsList, exportsList);
         }
-        return moduleList;
+        return exportsList && exportsList.length == 1 ? exportsList[0] : exportsList;
     };
 
     /**
@@ -606,45 +587,19 @@
     };
 
     /**
-     * 将一组 module 转换为一组 exports
-     **/
-    function moduleListToExportList(moduleList) {
-        var exportsList = [];
-        each(moduleList, function(i, module) {
-            if (!module.executed && module.execute) {
-                module.execute();
-            }
-            exportsList.push(module.exports);
-        });
-        return exportsList;
-    };
-
-    /**
-     * 全局 Require
-     */
-    owner.require = function(deps, callback, baseUri) {
-        var moduleList = owner.load(deps, function() {
-            var exportsList = moduleListToExportList(arguments);
-            if (callback) callback.apply(exportsList, exportsList);
-        }, baseUri);
-        var exportsList = moduleListToExportList(moduleList);
-        return exportsList && exportsList.length == 1 ? exportsList[0] : exportsList;
-    };
-
-    /**
      * 从缓存中取得模块
      */
-    function getModulesFromCache(uriList) {
-        var foundModules = [];
+    function getModuleExportsFromCache(uriList) {
+        var moduleExports = [];
         each(uriList, function(i, uri) {
             //如果 URL 中包括插件信息，则提取出不包括插件的 “模块” URI
             var moduleUri = uri.split('!')[1] || uri || '';
             var module = modules[moduleUri]
             if (module) {
-                foundModules.push(module);
+                moduleExports.push(module.exports);
             }
         });
-        return foundModules;
+        return moduleExports;
     }
 
     /**
@@ -657,9 +612,6 @@
             return resovleUri(_uri, baseUri || moduleUri, doNotHandleExt);
         };
         self.require = function(deps, callback) {
-            return owner.require(deps, callback, uri); //如果提前预加载则能取到返回值
-        };
-        self.load = function(deps, callback) {
             return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
         };
         self.unrequire = function(deps) {
@@ -765,7 +717,7 @@
      */
     var mainFile = getMainFile();
     if (!isNull(mainFile) && mainFile !== '') {
-        owner.require(mainFile);
+        owner.load(mainFile);
     }
 
     /**

@@ -13,6 +13,6 @@ ems.config({
     ]
 });
 define(function(require, exports, module) {
-    var ec = require("zrender/shape/Base.js ");
-    alert(0);
+    var ec = require("echarts");
+    alert(JSON.stringify(ec));
 });
