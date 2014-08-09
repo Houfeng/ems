@@ -170,7 +170,6 @@
             elementContainer = elementContainer && elementContainer[0] ? elementContainer[0] : document.body;
             elementContainer = elementContainer || elementContainer.parent;
         }
-        //将script添加到页面
         elementContainer.appendChild(element);
     }
 
@@ -405,8 +404,7 @@
         module.deps = context.deps;
         module.factory = context.factory;
         module.factoryDeps = context.factoryDeps; //类似CommonJS的依赖表
-        //清空 context
-        context = null;
+        context = null; //清除 context
         return module;
     }
 
