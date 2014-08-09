@@ -212,11 +212,6 @@
     var maxLoadTime = owner.maxLoadTime = 15000;
 
     /**
-     * 超时检测 Timer
-     **/
-    var loadTimers = {};
-
-    /**
      * 选项配置
      */
     var options = owner.options = {};
@@ -404,57 +399,69 @@
     /*****************************  模块函数开始  *****************************/
 
     /**
+     * 将加载上下文信息应用到 module 上
+     **/
+    function applyLoadContextToModule(module, context) {
+        module.deps = context.deps;
+        module.factory = context.factory;
+        module.factoryDeps = context.factoryDeps; //类似CommonJS的依赖表
+        //清空 context
+        context = null;
+        return module;
+    }
+
+    /**
      * 保存模块
      */
     function saveModule(uri, context) {
-        if (!modules[uri]) return;
-        modules[uri].loading = true;
-        modules[uri].deps = context.deps;
-        modules[uri].factory = context.factory;
-        modules[uri].factoryDeps = context.factoryDeps; //类似CommonJS的依赖表
-        //清空currently
-        context = null;
+        var module = modules[uri];
+        if (!module) return;
+        module.loading = true;
+        applyLoadContextToModule(module, context);
         //处理模块静态依赖开始
-        modules[uri].require(modules[uri].deps, function() {
-            modules[uri].imports = arguments || []; //将作为 define 的参数
+        module.require(module.deps, function() {
+            module.imports = arguments || []; //将作为 define 的参数
             async(function() {
                 //处理类CommonJS方式的依赖开始
-                modules[uri].require(modules[uri].factoryDeps, function() {
+                module.require(module.factoryDeps, function() {
                     async(function() {
-                        var srcImports = modules[uri].imports;
+                        //处理传递给 factory 的参数
+                        var srcImports = module.imports;
                         var dstImports = [];
                         for (var i = 0; i < srcImports.length; i++) {
-                            if (srcImports[i] == 'require') srcImports[i] = modules[uri].require;
-                            if (srcImports[i] == 'exports') srcImports[i] = modules[uri].exports;
-                            if (srcImports[i] == 'module') srcImports[i] = modules[uri];
+                            if (srcImports[i] == 'require') srcImports[i] = module.require;
+                            if (srcImports[i] == 'exports') srcImports[i] = module.exports;
+                            if (srcImports[i] == 'module') srcImports[i] = module;
                             dstImports.push(srcImports[i]);
                         }
-                        dstImports.push(modules[uri].require);
-                        dstImports.push(modules[uri].exports);
-                        dstImports.push(modules[uri]);
-                        modules[uri].imports = dstImports;
+                        dstImports.push(module.require);
+                        dstImports.push(module.exports);
+                        dstImports.push(module);
+                        module.imports = dstImports;
                         //生成模块的待执行函数
-                        modules[uri].execute = function() {
-                            if (modules[uri].executed || isNull(modules[uri].factory)) {
-                                return modules[uri].exports;
+                        module.execute = function() {
+                            if (module.executed || isNull(module.factory)) {
+                                return module.exports;
                             }
-                            var ret = modules[uri].factory.apply(modules[uri], modules[uri].imports);
-                            modules[uri].exports = ret || modules[uri].exports;
-                            modules[uri].executed = true;
-                            return modules[uri].exports;
+                            var returnObject = module.factory.apply(module, module.imports);
+                            module.exports = returnObject || module.exports;
+                            module.executed = true;
+                            return module.exports;
                         };
-                        modules[uri].execute();
+                        module.execute();
                         //处理回调列表
-                        each(modules[uri].loadCallbacks, function() {
-                            this(modules[uri].exports);
+                        each(module.loadCallbacks, function(i, callback) {
+                            callback(module.exports);
                         });
                         //检查并出发加载完成事件
-                        if (owner.onLoad) owner.onLoad(modules[uri]);
+                        if (owner.onLoad) owner.onLoad(module);
                         //标记录加载完成
-                        modules[uri].loaded = true;
-                        modules[uri].loadCallbacks = null;
+                        module.loaded = true;
+                        module.loadCallbacks = null;
                         //清楚超时检查定时器
-                        if (loadTimers[uri]) clearTimeout(loadTimers[uri]);
+                        if (module.timer) {
+                            clearTimeout(module.timer);
+                        }
                     });
                 }); //处理类CommonJS方式的依赖结束，CommonJS 将延迟执行（在 x=require(...) 时执行）
             });
@@ -469,33 +476,34 @@
         if (isNull(modules[uri])) {
             modules[uri] = new Module(uri);
         }
+        var module = modules[uri];
         //如果加载完成就直接回调;
-        if (modules[uri].loaded && callback) {
-            callback(modules[uri].exports);
-            return modules[uri].exports;
+        if (module.loaded && callback) {
+            callback(module.exports);
+            return module.exports;
         }
         //如果缓存中不存在，并且回调链也已创建，则压入当前callback,然后返回，等待回调
-        if (!isNull(modules[uri].loadCallbacks)) {
-            modules[uri].loadCallbacks.push(callback);
+        if (!isNull(module.loadCallbacks)) {
+            module.loadCallbacks.push(callback);
             return;
         }
         //如果缓存中不存在，并且回调链为NULL，则创建回调链，并压入当前callback
-        modules[uri].loadCallbacks = [];
-        modules[uri].loadCallbacks.push(callback);
+        module.loadCallbacks = [];
+        module.loadCallbacks.push(callback);
         //创建无素
-        modules[uri].element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
+        module.element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
         //绑定load事件,模块下载完成，执行完成define，会立即触发load
-        bindLoadEvent(modules[uri].element, function() {
-            if (!modules[uri].loaded && !modules[uri].loading) {
+        bindLoadEvent(module.element, function() {
+            if (!module.loaded && !module.loading) {
                 var context = loadContextQueque.shift() || {};
                 saveModule(uri, context);
             }
         });
         //
-        loadTimers[uri] = setTimeout(function() {
+        module.timer = setTimeout(function() {
             console.error("加载 " + uri + " 时超时");
         }, maxLoadTime);
-        appendToDom(modules[uri].element);
+        appendToDom(module.element);
     }
 
     /**
@@ -560,17 +568,18 @@
     owner.unload = function(deps, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
         each(uriList, function(i, uri) {
-            if (modules[uri]) {
-                modules[uri].element.parentNode.removeChild(modules[uri].element);
-                modules[uri].exports = null;
-                modules[uri].loading = null;
-                modules[uri].deps = null;
-                modules[uri].factory = null;
-                modules[uri].factoryDeps = null;
-                modules[uri].element = null;
-                modules[uri].loaded = null;
-                modules[uri].id = null;
-                modules[uri] = null;
+            var module = modules[uri];
+            if (module) {
+                module.element.parentNode.removeChild(module.element);
+                module.exports = null;
+                module.loading = null;
+                module.deps = null;
+                module.factory = null;
+                module.factoryDeps = null;
+                module.element = null;
+                module.loaded = null;
+                module.id = null;
+                module = null;
             }
         });
     };
@@ -688,6 +697,9 @@
         }
     };
 
+    /**
+     * 处理路径
+     **/
     owner.resovleUri = function(uri, baseUri) {
         return resovleUri(uri, baseUri || location.href);
     };
