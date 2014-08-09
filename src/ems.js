@@ -91,15 +91,15 @@
      */
     function matchRequire(src) {
         src = src.replace(/\/\*[\w\W]*?\*\//gm, ';').replace(/^\/\/.*/gi, ';');
-        var rs = [];
+        var foundArray = [];
         var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]|\.]/gm;
-        var mh = null;
-        while (mh = regx.exec(src)) {
-            if (mh && mh[1] && !contains(mh[1], '"') && !contains(mh[1], "'")) {
-                rs.push(mh[1]);
+        var match = null;
+        while (match = regx.exec(src)) {
+            if (match && match[1] && !contains(match[1], '"') && !contains(match[1], "'")) {
+                foundArray.push(match[1]);
             }
         }
-        return rs;
+        return foundArray;
     }
 
     /*****************************  DOM 函数开始  *****************************/
