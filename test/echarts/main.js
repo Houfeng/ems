@@ -13,7 +13,7 @@ define(function(require, exports, module) {
     var ec = require("echarts");
     require("echarts/chart/pie");
 
-    alert(ec);
+    //alert(ec);
 
     var chart = ec.init(document.getElementById("holder"));
     var option = {
