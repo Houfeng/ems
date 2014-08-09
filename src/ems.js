@@ -499,10 +499,11 @@
                 saveModule(uri, context);
             }
         });
-        //
+        //创建超时计时器
         module.timer = setTimeout(function() {
-            console.error("加载 " + uri + " 时超时");
+            console.error("加载 " + uri + " 超时,可能存在无法处理的循环依赖或其它未知问题.");
         }, maxLoadTime);
+        //添加到 DOM 中
         appendToDom(module.element);
     }
 
@@ -515,27 +516,30 @@
         } else {
             //带插件的URL
             var splitIndex = uri.lastIndexOf('!');
-            var uriParts1 = uri.substring(0, splitIndex);
-            var uriParts2 = uri.substring(splitIndex + 1);
-            if (modules[uriParts2] && modules[uriParts2].loaded) {
-                var rs = modules[uriParts2].exports;
-                if (callback) callback(rs);
-                return rs;
+            var pluginUri = uri.substring(0, splitIndex);
+            var moduleUri = uri.substring(splitIndex + 1);
+            //检查是否已加载
+            var module = modules[moduleUri];
+            if (module && module.loaded) {
+                if (callback) callback(module.exports);
+                return module.exports;
             }
             //处理使用插件的引用
-            return loadOne(uriParts1, function(plugin) {
+            return loadOne(pluginUri, function(plugin) {
                 if (!plugin || !plugin.load) return;
-                var onLoadCallback = function(rs) {
-                    modules[uriParts2] = {
-                        exports: rs,
+                var onLoadCallback = function(moduleExports) {
+                    module = {
+                        exports: moduleExports,
                         loaded: true
                     };
-                    if (callback) callback(rs);
+                    if (callback) callback(moduleExports);
                 };
                 onLoadCallback.fromText = onLoadCallback;
                 onLoadCallback.error = onLoadCallback;
+                //插件模块
+                var pluginModule = modules[pluginUri];
                 //调用插件方法。
-                plugin.load(uriParts2, modules[uriParts1].require, onLoadCallback, owner.config());
+                plugin.load(moduleUri, pluginModule.require, onLoadCallback, owner.config());
             });
         }
     }
@@ -590,12 +594,11 @@
     function getModuleExportsFromCache(uriList) {
         var moduleExports = [];
         each(uriList, function(i, uri) {
-            var uriForPlugin = uri.split('!')[1]; //带插件的URL
-            if (!isNull(uri) && modules[uri]) {
-                moduleExports.push(modules[uri].exports);
-            }
-            if (!isNull(uriForPlugin) && modules[uriForPlugin]) { //带插件的URL
-                moduleExports.push(modules[uriForPlugin].exports);
+            //如果 URL 中包括插件信息，则提取出不包括插件的 “模块” URI
+            var moduleUri = uri.split('!')[1] || uri || '';
+            var module = modules[moduleUri]
+            if (module) {
+                moduleExports.push(module.exports);
             }
         });
         return moduleExports;
