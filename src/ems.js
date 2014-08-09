@@ -1,6 +1,6 @@
 /**
  *
- * emsjs v1.2.1
+ * emsjs v1.2.2
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -101,7 +101,7 @@
         src = src.replace(/\/\*[\w\W]*?\*\//gm, ';').replace(/^\/\/.*/gi, ';');
         src = removeComments(src);
         var foundArray = [];
-        var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]|\.]/gm;
+        var regx = /require\s*\(\s*[\"|\'](.+?)[\"|\']\s*\)\s*[;|,|\n|\}|\{|\[|\]|\.|\)|\(|\||\&|\+|\-|\*|\/|\<|\>|\=|\?|\:|\%|\$|\_|\!|\"|\'|\~|\^]/gm;
         var match = null;
         while (match = regx.exec(src)) {
             if (match && match[1] && !contains(match[1], '"') && !contains(match[1], "'")) {
@@ -110,6 +110,8 @@
         }
         return foundArray;
     }
+
+    owner.match = matchRequire;
 
     /*****************************  DOM 函数开始  *****************************/
 
@@ -246,21 +248,27 @@
     var modules = owner.modules = {
         "require": {
             id: "require",
+            loading: true,
+            saved: true,
             loaded: true,
             executed: true,
-            exports: "require"
+            exports: {}
         },
         "exports": {
             id: "exports",
+            loading: true,
+            saved: true,
             loaded: true,
             executed: true,
-            exports: "exports"
+            exports: {}
         },
         "module": {
             id: "module",
+            loading: true,
+            saved: true,
             loaded: true,
             executed: true,
-            exports: "module"
+            exports: {}
         }
     };
 
@@ -426,8 +434,8 @@
     function saveModule(uri, context) {
         var module = modules[uri];
         if (!module) return;
-        module.loading = true;
         applyLoadContextToModule(module, context);
+        module.saved = true;
         //处理模块静态依赖开始
         module.load(module.deps, function() {
             module.imports = arguments || []; //将作为 define 的参数
@@ -489,17 +497,15 @@
      */
     function _loadOne(uri, callback) {
         //如果加载一个新模块，则创建模块上下文对象
-        if (isNull(modules[uri])) {
-            modules[uri] = new Module(uri);
-        }
+        modules[uri] = modules[uri] || new Module(uri);
         var module = modules[uri];
         //如果加载完成就直接回调;
-        if ((module.loading || module.loaded) && callback) {
+        if (module && module.saved && callback) {
             callback(module);
             return module;
         }
         //如果缓存中不存在，并且回调链也已创建，则压入当前callback,然后返回，等待回调
-        if (!isNull(module.loadCallbacks)) {
+        if (module && !isNull(module.loadCallbacks)) {
             module.loadCallbacks.push(callback);
             return;
         }
@@ -510,7 +516,7 @@
         module.element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
         //绑定load事件,模块下载完成，执行完成define，会立即触发load
         bindLoadEvent(module.element, function() {
-            if (!module.loaded && !module.loading) {
+            if (!module.loaded && !module.saved) {
                 var context = loadContextQueque.shift() || {};
                 saveModule(uri, context);
             }
@@ -519,6 +525,8 @@
         module.timer = setTimeout(function() {
             console.error("加载 " + uri + " 超时,可能存在无法处理的循环依赖或其它未知问题.");
         }, maxLoadTime);
+        //
+        module.loading = true;
         //添加到 DOM 中
         appendToDom(module.element);
     }
@@ -592,14 +600,7 @@
             var module = modules[uri];
             if (module) {
                 module.element.parentNode.removeChild(module.element);
-                module.exports = null;
-                module.loading = null;
-                module.deps = null;
-                module.factory = null;
-                module.factoryDeps = null;
                 module.element = null;
-                module.loaded = null;
-                module.id = null;
                 module = null;
             }
         });
@@ -611,7 +612,7 @@
     function moduleListToExportList(moduleList) {
         var exportsList = [];
         each(moduleList, function(i, module) {
-            if (!module.executed && module.execute) {
+            if (module && module.saved && !module.executed && module.execute) {
                 module.execute();
             }
             exportsList.push(module.exports);
@@ -624,7 +625,8 @@
      */
     owner.require = function(deps, callback, baseUri) {
         var moduleList = owner.load(deps, function() {
-            var exportsList = moduleListToExportList(arguments);
+            var moduleList = arguments;
+            var exportsList = moduleListToExportList(moduleList);
             if (callback) callback.apply(exportsList, exportsList);
         }, baseUri);
         var exportsList = moduleListToExportList(moduleList);
@@ -678,7 +680,10 @@
         this.factory = null;
         this.deps = null;
         this.factoryDeps = null;
+        this.loading = false;
         this.loaded = false;
+        this.executed = false;
+        this.saved = false;
     }
 
     /**
