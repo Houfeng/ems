@@ -113,8 +113,6 @@
         return foundArray;
     }
 
-    owner.match = matchRequire;
-
     /*****************************  DOM 函数开始  *****************************/
 
     /**
