@@ -523,7 +523,7 @@
         });
         //创建超时计时器
         module.timer = setTimeout(function() {
-            throw "加载 " + uri + " 超时,可能存在 '无法处理的循环依赖、脚本错误、其它未知问题'";
+            throw "加载 " + uri + " 超时,可能原因: \"1.无法处理的循环依赖; 2.资源不存在; 3.脚本错误; 4.其它未知错误;\".";
         }, maxLoadTime);
         //
         module.loading = true;
