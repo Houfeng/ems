@@ -523,7 +523,7 @@
         });
         //创建超时计时器
         module.timer = setTimeout(function() {
-            console.error("加载 " + uri + " 超时,可能存在无法处理的循环依赖或其它未知问题.");
+            throw "加载 " + uri + " 超时,可能存在 '无法处理的循环依赖、脚本错误、其它未知问题'";
         }, maxLoadTime);
         //
         module.loading = true;
@@ -549,22 +549,32 @@
                 return module;
             }
             //处理使用插件的引用
-            return loadOne(pluginUri, function(plugin) {
-                if (!plugin || !plugin.load) return;
-                var onLoadCallback = function(moduleExports) {
-                    module = {
-                        exports: moduleExports,
-                        executed: true,
-                        loaded: true
-                    };
-                    if (callback) callback(moduleExports);
+            return loadOne(pluginUri, function(pluginModule) {
+                if (pluginModule && pluginModule.saved && !pluginModule.executed && pluginModule.execute) {
+                    pluginModule.execute();
+                }
+                var plugin = pluginModule.exports;
+                if (!plugin || !plugin.load) {
+                    throw "插件 '" + pluginUri + "' 存在错误."
                 };
-                onLoadCallback.fromText = onLoadCallback;
-                onLoadCallback.error = onLoadCallback;
-                //插件模块
-                var pluginModule = modules[pluginUri];
-                //调用插件方法。
-                plugin.load(moduleUri, pluginModule.require, onLoadCallback, owner.config());
+                var onLoad = function(_exports) {
+                    var module = modules[moduleUri] = {
+                        exports: _exports,
+                        executed: true,
+                        loaded: true,
+                        loading: true,
+                        saved: true
+                    };
+                    if (callback) callback(module);
+                };
+                onLoad.fromText = onLoad;
+                onLoad.error = onLoad;
+                /**
+                 * 调用插件方法。
+                 * load: function (name, parentRequire, onload, config)
+                 * 因为 moduleUri 是已转换过的 这里 parentRequire 暂先传递 pluginModule.require
+                 */
+                plugin.load(moduleUri, pluginModule.require, onLoad, owner.config());
             });
         }
     }
@@ -664,7 +674,7 @@
         self.load = function(deps, callback) {
             return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
         };
-        self.unrequire = function(deps) {
+        self.unload = function(deps) {
             return owner.unload(deps, uri);
         };
         self.require.toUrl = self.require.resovleUri = function(_uri, baseUri, doNotHandleExt) {
