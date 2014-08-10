@@ -495,7 +495,7 @@
     /**
      * 加载一个文件
      */
-    function _loadOne(uri, callback) {
+    function _loadOne(uri, callback, baseUri) {
         //如果加载一个新模块，则创建模块上下文对象
         modules[uri] = modules[uri] || new Module(uri);
         var module = modules[uri];
@@ -534,9 +534,9 @@
     /**
      * 加载一个模块，会检测是否使用了插件，内部调用 _loadOne
      **/
-    function loadOne(uri, callback) {
+    function loadOne(uri, callback, baseUri) {
         if (!contains(uri, '!')) {
-            return _loadOne(uri, callback);
+            return _loadOne(uri, callback, baseUri);
         } else {
             //带插件的URL
             var splitIndex = uri.lastIndexOf('!');
@@ -574,7 +574,8 @@
                  * load: function (name, parentRequire, onload, config)
                  * 因为 moduleUri 是已转换过的 这里 parentRequire 暂先传递 pluginModule.require
                  */
-                plugin.load(moduleUri, pluginModule.require, onLoad, owner.config());
+                var parentModule = modules[baseUri] || pluginModule || owner;
+                plugin.load(moduleUri, parentModule.require, onLoad, owner.config());
             });
         }
     }
@@ -593,7 +594,7 @@
                     if (uriCount < uriList.length) return;
                     moduleList = getModulesFromCache(uriList) || moduleList;
                     if (callback) callback.apply(moduleList, moduleList);
-                });
+                }, baseUri);
             });
         } else {
             if (callback) callback.apply(moduleList, moduleList);
@@ -668,14 +669,14 @@
         self.resovleUri = function(_uri, baseUri, doNotHandleExt) {
             return resovleUri(_uri, baseUri || moduleUri, doNotHandleExt);
         };
-        self.require = function(deps, callback) {
-            return owner.require(deps, callback, uri); //如果提前预加载则能取到返回值
-        };
         self.load = function(deps, callback) {
             return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
         };
         self.unload = function(deps) {
             return owner.unload(deps, uri);
+        };
+        self.require = function(deps, callback) {
+            return owner.require(deps, callback, uri); //如果提前预加载则能取到返回值
         };
         self.require.toUrl = self.require.resovleUri = function(_uri, baseUri, doNotHandleExt) {
             return self.resovleUri(_uri, baseUri, doNotHandleExt);
