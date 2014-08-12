@@ -1,6 +1,6 @@
 /**
  *
- * emsjs v1.2.2
+ * emsjs v1.2.3
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -10,7 +10,7 @@
  **/
 (function(owner) {
 
-    owner.version = "v1.2.2";
+    owner.version = "v1.2.3";
 
     /*****************************  工具函数开始  *****************************/
     /**
@@ -25,6 +25,20 @@
      */
     function isArray(obj) {
         return (obj instanceof Array) || (obj && obj.length && obj[0]);
+    }
+
+    /**
+     * 检查是否是函数
+     */
+    function isFunction(obj) {
+        return obj !== null && typeof(obj) === 'function';
+    }
+
+    /**
+     * 检查是否是字符串
+     */
+    function isString(obj) {
+        return obj !== null && typeof(obj) === 'string';
     }
 
     /**
@@ -229,18 +243,26 @@
     /**
      * 默认扩展名
      **/
-    var extension = owner.extension = ".js";
+    var extension = owner.extension = options.extension = ".js";
 
     /**
      * 别名列表
      */
-    var alias = owner.alias = {};
+    var alias = owner.alias = owner.paths = options.alias = options.paths = {};
 
     /**
      * 包列表
      * @type {Object}
      */
-    var packages = owner.packages = {};
+    var packages = owner.packages = options.packages = {};
+
+    /**
+     * 垫片列表
+     * @type {Object}
+     */
+    var shim = owner.shim = options.shim = {};
+
+    var shimTable = {};
 
     /**
      * 模块列表
@@ -278,16 +300,27 @@
     owner.config = function(_options) {
         if (_options === null) return options;
         _options = _options || {};
+        //处理别名
         _options.alias = _options.alias || _options.paths || {};
         each(_options.alias, function(name, value) { //防止覆盖已添加的别名
-            alias[name] = value;
+            var key = value.name || name;
+            alias[key] = value;
         });
+        //处理垫片
+        _options.shim = _options.shim || {};
+        each(_options.shim, function(name, value) { //防止覆盖已添加的包
+            var key = value.name || name;
+            shim[key] = value;
+        });
+        //处理包
         _options.packages = _options.packages || [];
         each(_options.packages, function(name, value) { //防止覆盖已添加的包
-            value.name = value.name || name;
-            packages[value.name] = value;
+            var key = value.name || name;
+            packages[key] = value;
         });
+        //处理默认扩展名
         extension = extension || _options.extension;
+        //暂存
         options = _options;
     };
 
@@ -356,13 +389,28 @@
         var uriParts = _uri.split('!'); //处理带插件URI
         var rs = [];
         each(uriParts, function(i, part) {
-            var uri = alias[part] || part;
-            uri = handlePackages(uri);
-            uri = _resovleUri(uri, baseUri);
+            var uri = handleAliasAndShim(part); //处理别名及垫片,别名在前，可指向包
+            uri = handlePackages(uri); //处理包
+            uri = _resovleUri(uri, baseUri); //计算路径
             if (!notHandleExt) uri = handleExtension(uri);
             rs.push(uri);
         });
         return rs.join('!');
+    }
+
+    /**
+     * 处理别名及垫片
+     */
+    function handleAliasAndShim(uri) {
+        if (isSystemModule(uri)) return uri;
+        //查找别名
+        var realUri = alias[uri] || uri;
+        //查找垫片
+        var shimItem = shim[uri];
+        if (shimItem != null) {
+            shimTable[shimItem.uri || realUri] = shimItem;
+        }
+        return realUri;
     }
 
     /**
@@ -381,6 +429,7 @@
      * 处理包
      */
     function handlePackages(uri) {
+        if (isSystemModule(uri)) return uri;
         var index = uri.indexOf('/');
         if (index < 0) index = uri.length;
         var part1 = uri.substr(0, index);
@@ -421,9 +470,10 @@
      * 将加载上下文信息应用到 module 上
      **/
     function applyLoadContextToModule(module, context) {
-        module.deps = context.deps;
-        module.factory = context.factory;
-        module.factoryDeps = context.factoryDeps; //类似CommonJS的依赖表
+        module.id = context.id || module.id;
+        module.deps = context.deps || module.deps;
+        module.factory = context.factory || module.factory;
+        module.factoryDeps = context.factoryDeps || module.factoryDeps; //类似CommonJS的依赖表
         context = null; //清除 context
         return module;
     }
@@ -445,7 +495,7 @@
                     async(function() {
                         //生成模块的待执行函数
                         module.execute = function() {
-                            if (module.executed || isNull(module.factory)) {
+                            if (module.executed || isNull(module.factory) || !isFunction(module.factory)) {
                                 return module.exports;
                             }
                             //处理传递给 factory 的参数
@@ -475,10 +525,14 @@
                         };
                         //处理回调列表
                         each(module.loadCallbacks, function(i, callback) {
-                            callback(module);
+                            if (isFunction(callback)) {
+                                callback(module);
+                            }
                         });
                         //检查并出发加载完成事件
-                        if (owner.onLoad) owner.onLoad(module);
+                        if (owner.onLoad && isFunction(owner.onLoad)) {
+                            owner.onLoad(module);
+                        }
                         //标记录加载完成
                         module.loaded = true;
                         module.loadCallbacks = null;
@@ -500,7 +554,7 @@
         modules[uri] = modules[uri] || new Module(uri);
         var module = modules[uri];
         //如果加载完成就直接回调;
-        if (module && module.saved && callback) {
+        if (module && module.saved && callback && isFunction(callback)) {
             callback(module);
             return module;
         }
@@ -512,13 +566,36 @@
         //如果缓存中不存在，并且回调链为NULL，则创建回调链，并压入当前callback
         module.loadCallbacks = [];
         module.loadCallbacks.push(callback);
-        //创建无素
+        //创建元素
         module.element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
         //绑定load事件,模块下载完成，执行完成define，会立即触发load
         bindLoadEvent(module.element, function() {
             if (!module.loaded && !module.saved) {
-                var context = loadContextQueque.shift() || {};
-                saveModule(uri, context);
+                var context = loadContextQueque.shift();
+                if (context != null) {
+                    //TODO: 如果某天想支持一个文件多个模块
+                    //需要在些将 loadContextQueque 里的所有模块取出来保存
+                    saveModule(uri, context);
+                } else if (shimTable[uri] != null) {
+                    //如果是一个垫片 URI，则生成垫片 Context
+                    //垫片代码文件没有 define 只会在些触发 saveModule
+                    context = shimTable[uri];
+                    if (isFunction(context.exports) || isFunction(context.init)) {
+                        var fun = context.init || context.exports || context.factory;
+                        context.factory = fun;
+                    } else if (isString(context.exports) && typeof(window) !== 'undefined') {
+                        var globalName = context.exports;
+                        context.factory = function() {
+                            return window[globalName];
+                        };
+                    }
+                    context.id = uri;
+                    //context.exports = {};
+                    saveModule(uri, context);
+                } else {
+                    //其它，如样式、没有配置 shim 的普通脚本
+                    saveModule(uri, {});
+                }
             }
         });
         //创建超时计时器
@@ -565,14 +642,13 @@
                         loading: true,
                         saved: true
                     };
-                    if (callback) callback(module);
+                    if (callback && isFunction(callback)) callback(module);
                 };
                 onLoad.fromText = onLoad;
                 onLoad.error = onLoad;
                 /**
                  * 调用插件方法。
                  * load: function (name, parentRequire, onload, config)
-                 * 因为 moduleUri 是已转换过的 这里 parentRequire 暂先传递 pluginModule.require
                  */
                 var parentModule = modules[baseUri] || pluginModule || owner;
                 plugin.load(moduleUri, parentModule.require, onLoad, owner.config());
@@ -593,11 +669,11 @@
                     uriCount += 1;
                     if (uriCount < uriList.length) return;
                     moduleList = getModulesFromCache(uriList) || moduleList;
-                    if (callback) callback.apply(moduleList, moduleList);
+                    if (callback && isFunction(callback)) callback.apply(moduleList, moduleList);
                 }, baseUri);
             });
         } else {
-            if (callback) callback.apply(moduleList, moduleList);
+            if (callback && isFunction(callback)) callback.apply(moduleList, moduleList);
         }
         return moduleList;
     };
@@ -638,7 +714,7 @@
         var moduleList = owner.load(deps, function() {
             var moduleList = arguments;
             var exportsList = moduleListToExportList(moduleList);
-            if (callback) callback.apply(exportsList, exportsList);
+            if (callback && isFunction(callback)) callback.apply(exportsList, exportsList);
         }, baseUri);
         var exportsList = moduleListToExportList(moduleList);
         return exportsList && exportsList.length == 1 ? exportsList[0] : exportsList;
@@ -720,6 +796,7 @@
             };
         } else if (id && factory) { //define(a,null,b)
             loadContext = {
+                "id": id,
                 "deps": deps,
                 "factory": factory
             };
@@ -739,7 +816,7 @@
         var context = createLoadContext(id, deps, factory);
         if (context) {
             //如果模块是一个JSON对象
-            if (typeof context.factory != 'function') {
+            if (!isFunction(context.factory)) {
                 var jsonObject = context.factory;
                 context.factory = function() {
                     return jsonObject;
@@ -772,7 +849,7 @@
     /**
      * 如果在浏览器环境
      */
-    if (window) {
+    if (typeof(window) !== 'undefined') {
         window.define = owner.define;
     }
 
@@ -787,7 +864,8 @@
     /**
      * 标识define为amd或emd的实现
      */
-    owner.define.amd = owner.define.emd = owner.define.eamd = {};
+    owner.define.amd = {};
+    owner.define.amd.jQuery = true; //处理早期的 jQuery SB 版本
 
 })(this.ems = {});
 //

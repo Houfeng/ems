@@ -122,7 +122,7 @@ define(
         };
 
         Painter.prototype._paintList = function(list) {
-
+            
             var layerStatus = this._getLayerStatus(list);
 
             var currentLayer;
@@ -451,6 +451,7 @@ define(
         };
 
         Painter.prototype.toDataURL = function (type, backgroundColor, args) {
+            var me = this;
             if (vmlCanvasManager) {
                 return null;
             }
@@ -480,7 +481,7 @@ define(
                         ) {
                             if (config.catchBrushException) {
                                 try {
-                                    shape.brush(ctx, false, this.updatePainter);
+                                    shape.brush(ctx, false, me.updatePainter);
                                 }
                                 catch(error) {
                                     log(
@@ -491,7 +492,7 @@ define(
                                 }
                             }
                             else {
-                                shape.brush(ctx, false, this.updatePainter);
+                                shape.brush(ctx, false, me.updatePainter);
                             }
                         }
                     }
