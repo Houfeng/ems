@@ -252,9 +252,9 @@
     options.extension = ".js";
 
     /**
-     * 超时最大时间（毫稍）
+     * 超时最大时间,0 代表不进行超进检查（单位:毫秒）
      **/
-    options.maxLoadTime = 15000;
+    options.maxLoadTime = 0;
 
     /**
      * 别名列表 (在 owner 上挂载对应属性)
@@ -553,7 +553,7 @@
                         //标记录加载完成
                         module.loaded = true;
                         module.loadCallbacks = null;
-                        //清楚超时检查定时器
+                        //清除超时检查定时器
                         if (module.timer) {
                             clearTimeout(module.timer);
                         }
@@ -616,9 +616,11 @@
             }
         });
         //创建超时计时器
-        module.timer = setTimeout(function() {
-            throw "加载 " + uri + " 超时,可能原因: \"1.无法处理的循环依赖; 2.资源不存在; 3.脚本错误; 4.其它未知错误;\".";
-        }, options.maxLoadTime);
+        if (options.maxLoadTime > 0) {
+            module.timer = setTimeout(function() {
+                throw "加载 " + uri + " 超时,可能原因: \"1.无法处理的循环依赖; 2.资源不存在; 3.脚本错误; 4.其它未知错误;\".";
+            }, options.maxLoadTime);
+        }
         //
         module.loading = true;
         //添加到 DOM 中
