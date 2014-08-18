@@ -1,6 +1,6 @@
 /**
  *
- * emsjs v1.2.3
+ * emsjs v1.2.4
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -8,9 +8,20 @@
  * emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容所有主流浏览器。
  *
  **/
-(function(owner) {
+(function(env) {
 
-    owner.version = "v1.2.3";
+    /**
+     * ems 全局对象本身是一个 function ，内部调用自身的方法 (ems.require);
+     */
+    var owner = (env.ems = function(deps, callback, baseUri) {
+        return owner.require(deps, callback, baseUri);
+    });
+
+    /**
+     * ems 版本信息
+     */
+    owner.version = "v1.2.4";
+    owner.author = "Houfeng";
 
     /*****************************  工具函数开始  *****************************/
     /**
@@ -231,11 +242,6 @@
     /*****************************  公共配置开始  *****************************/
 
     /**
-     * 超时最大时间（毫稍）
-     **/
-    var maxLoadTime = owner.maxLoadTime = 15000;
-
-    /**
      * 选项配置
      */
     var options = owner.options = {};
@@ -243,21 +249,26 @@
     /**
      * 默认扩展名
      **/
-    var extension = owner.extension = options.extension = ".js";
+    options.extension = ".js";
 
     /**
-     * 别名列表
+     * 超时最大时间（毫稍）
+     **/
+    options.maxLoadTime = 15000;
+
+    /**
+     * 别名列表 (在 owner 上挂载对应属性)
      */
     var alias = owner.alias = owner.paths = options.alias = options.paths = {};
 
     /**
-     * 包列表
+     * 包列表 (在 owner 上挂载对应属性)
      * @type {Object}
      */
     var packages = owner.packages = options.packages = {};
 
     /**
-     * 垫片列表
+     * 垫片列表 (在 owner 上挂载对应属性)
      * @type {Object}
      */
     var shim = owner.shim = options.shim = {};
@@ -300,28 +311,31 @@
     owner.config = function(_options) {
         if (_options === null) return options;
         _options = _options || {};
-        //处理别名
+        //通过从 _options 向 options 拷贝的方式支持 “简单的多处配置”
+        //
+        //处理别名配置
         _options.alias = _options.alias || _options.paths || {};
         each(_options.alias, function(name, value) { //防止覆盖已添加的别名
             var key = value.name || name;
             alias[key] = value;
         });
-        //处理垫片
+        //处理垫片配置
         _options.shim = _options.shim || {};
         each(_options.shim, function(name, value) { //防止覆盖已添加的包
             var key = value.name || name;
             shim[key] = value;
         });
-        //处理包
+        //处理包配置
         _options.packages = _options.packages || [];
         each(_options.packages, function(name, value) { //防止覆盖已添加的包
             var key = value.name || name;
             packages[key] = value;
         });
-        //处理默认扩展名
-        extension = extension || _options.extension;
-        //暂存
-        options = _options;
+        //处理其它配置
+        options.extension = options.extension || _options.extension;
+        options.baseUri = options.baseUri || _options.baseUri || _options.baseUrl;
+        options.maxLoadTime = options.maxLoadTime || _options.maxLoadTime;
+        //options.config = options.config || _options.config;
     };
 
     /*****************************  路径函数开始  *****************************/
@@ -420,7 +434,7 @@
         if (isSystemModule(uri)) return uri;
         var fileName = uri.substring(uri.lastIndexOf('/') + 1, uri.length);
         if (!isNull(uri) && !isNull(fileName) && uri !== "" && !contains(uri, '?') && !contains(uri, '#') && fileName !== "" && !contains(fileName, '.')) {
-            uri += (extension || ".js");
+            uri += (options.extension || ".js");
         }
         return uri;
     }
@@ -454,7 +468,7 @@
      * 转换一组依赖为绝对路径
      */
     function depsToUriList(deps, baseUri) {
-        baseUri = baseUri || location.href;
+        baseUri = baseUri || options.baseUri || location.href;
         deps = stringToStringArray(deps);
         var absUriList = [];
         each(deps, function(i, dep) {
@@ -496,6 +510,7 @@
                         //生成模块的待执行函数
                         module.execute = function() {
                             if (module.executed || isNull(module.factory) || !isFunction(module.factory)) {
+                                module.executed = true;
                                 return module.exports;
                             }
                             //处理传递给 factory 的参数
@@ -509,7 +524,9 @@
                                 } else if (srcImports[i].id == 'module') {
                                     dstImports.push(module);
                                 } else {
-                                    srcImports[i].execute();
+                                    if (!module.executed) {
+                                        srcImports[i].execute();
+                                    }
                                     dstImports.push(srcImports[i].exports);
                                 }
                             }
@@ -601,7 +618,7 @@
         //创建超时计时器
         module.timer = setTimeout(function() {
             throw "加载 " + uri + " 超时,可能原因: \"1.无法处理的循环依赖; 2.资源不存在; 3.脚本错误; 4.其它未知错误;\".";
-        }, maxLoadTime);
+        }, options.maxLoadTime);
         //
         module.loading = true;
         //添加到 DOM 中
@@ -692,6 +709,7 @@
             }
         });
     };
+    owner.undef = owner.unload;
 
     /**
      * 将一组 module 转换为一组 exports
@@ -843,15 +861,14 @@
      * 处理路径
      **/
     owner.resovleUri = function(uri, baseUri) {
-        return resovleUri(uri, baseUri || location.href);
+        return resovleUri(uri, baseUri || options.baseUri || location.href);
     };
 
     /**
-     * 如果在浏览器环境
+     * 标识define为amd或emd的实现
      */
-    if (typeof(window) !== 'undefined') {
-        window.define = owner.define;
-    }
+    owner.define.amd = {};
+    owner.define.amd.jQuery = true; //处理早期的 jQuery SB 版本
 
     /**
      * 加载启始模块或文件
@@ -862,10 +879,14 @@
     }
 
     /**
-     * 标识define为amd或emd的实现
+     * 声明全局 define
      */
-    owner.define.amd = {};
-    owner.define.amd.jQuery = true; //处理早期的 jQuery SB 版本
+    env.define = owner.define;
 
-})(this.ems = {});
+    /**
+     * 声明全局 require
+     */
+    env.require = owner;
+
+})(this);
 //

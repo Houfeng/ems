@@ -1,16 +1,26 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
+
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Ems Unit Tests</title>
     <link rel="stylesheet" href="qunit/qunit.css" />
     <script src="qunit/qunit.js" type="text/javascript"></script>
-    <script data-main="files/main" src="../src/ems.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../src/ems.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+        ems.require('files/main', function() {
+            setTimeout(function() {
+                location.href = location.href;
+            }, 5000);
+        });
+    </script>
 </head>
+
 <body>
     <div id="qunit">
     </div>
     <div id="qunit-fixture">
     </div>
 </body>
+
 </html>
