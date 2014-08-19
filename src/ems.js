@@ -1,13 +1,12 @@
 /**
- *
- * emsjs v1.2.4
+ * emsjs v1.2.8
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
  *
- * emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容所有主流浏览器。
- *
+ * emsjs 是一个符合 AMD 规范的浏览器端 JavaScript 模块加载器，兼容主流浏览器。
  **/
+
 (function(env) {
 
     /**
@@ -18,9 +17,13 @@
     });
 
     /**
-     * ems 版本信息
+     * 版本信息
      */
-    owner.version = "v1.2.4";
+    owner.version = "v1.2.8";
+
+    /**
+     * 作者信息
+     */
     owner.author = "Houfeng";
 
     /*****************************  工具函数开始  *****************************/
@@ -35,21 +38,21 @@
      * 检查是否是数组
      */
     function isArray(obj) {
-        return (obj instanceof Array) || (obj && obj.length && obj[0]);
+        return !isNull(obj) && (obj instanceof Array) || (obj && obj.length && obj[0]);
     }
 
     /**
      * 检查是否是函数
      */
     function isFunction(obj) {
-        return obj !== null && typeof(obj) === 'function';
+        return !isNull(obj) && typeof(obj) === 'function';
     }
 
     /**
      * 检查是否是字符串
      */
     function isString(obj) {
-        return obj !== null && typeof(obj) === 'string';
+        return !isNull(obj) && typeof(obj) === 'string';
     }
 
     /**
@@ -77,14 +80,14 @@
      * 从字符串开头匹配
      */
     function startWith(str1, str2) {
-        return str1 && str2 && str1.indexOf(str2) === 0;
+        return !isNull(str1) && !isNull(str2) && str1.indexOf(str2) === 0;
     }
 
     /**
      * 是否包含
      */
     function contains(str1, str2) {
-        return str1 && str2 && str1.indexOf(str2) > -1;
+        return !isNull(str1) && !isNull(str2) && str1.indexOf(str2) > -1;
     }
 
     /**
@@ -99,7 +102,7 @@
      * 异步方法
      */
     function async(fn) {
-        setTimeout(fn, 0);
+        setTimeout(fn, 13);
     }
 
     /**
@@ -137,6 +140,7 @@
         }
         return foundArray;
     }
+    owner.matchRequire = matchRequire;
 
     /*****************************  DOM 函数开始  *****************************/
 
@@ -225,7 +229,7 @@
      */
     function bindLoadEvent(element, handler) {
         if (!element || !handler) return;
-        //早期的Safari不支持link的load事件，则直接回调handler
+        //早期的Safari不支持link的load事件，暂不判断浏览器，粗暴的针对css，直接回调handler
         if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
             handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
             return;
@@ -254,7 +258,7 @@
     /**
      * 超时最大时间,0 代表不进行超进检查（单位:毫秒）
      **/
-    options.maxLoadTime = 0;
+    options.maxLoadTime = 10000;
 
     /**
      * 别名列表 (在 owner 上挂载对应属性)
@@ -276,7 +280,7 @@
     var shimTable = {};
 
     /**
-     * 模块列表
+     * 模块列表，默包含系统模块（系模块在执行时会被转换为实际有效的 factory 参数）
      **/
     var modules = owner.modules = {
         "require": {
@@ -399,14 +403,18 @@
      * 转换路径为绝对路径，此方将处理插件，内部调用 _resovleUri
      **/
     function resovleUri(_uri, baseUri, notHandleExt) {
-        if (isNull(_uri) || isNull(baseUri)) return _uri;
+        if (isNull(_uri) || isNull(baseUri)) {
+            return _uri;
+        }
         var uriParts = _uri.split('!'); //处理带插件URI
         var rs = [];
         each(uriParts, function(i, part) {
             var uri = handleAliasAndShim(part); //处理别名及垫片,别名在前，可指向包
             uri = handlePackages(uri); //处理包
             uri = _resovleUri(uri, baseUri); //计算路径
-            if (!notHandleExt) uri = handleExtension(uri);
+            if (!notHandleExt) {
+                uri = handleExtension(uri);
+            }
             rs.push(uri);
         });
         return rs.join('!');
@@ -416,7 +424,9 @@
      * 处理别名及垫片
      */
     function handleAliasAndShim(uri) {
-        if (isSystemModule(uri)) return uri;
+        if (isSystemModule(uri)) {
+            return uri;
+        }
         //查找别名
         var realUri = alias[uri] || uri;
         //查找垫片
@@ -431,10 +441,15 @@
      * 处理默认扩展名
      */
     function handleExtension(uri) {
-        if (isSystemModule(uri)) return uri;
+        if (isNull(uri) || isSystemModule(uri)) {
+            return uri;
+        }
         var fileName = uri.substring(uri.lastIndexOf('/') + 1, uri.length);
-        if (!isNull(uri) && !isNull(fileName) && uri !== "" && !contains(uri, '?') && !contains(uri, '#') && fileName !== "" && !contains(fileName, '.')) {
-            uri += (options.extension || ".js");
+        var isPath = isNull(fileName) || fileName === '';
+        if (isPath) return uri;
+        //
+        if (!contains(uri, '?') && !contains(uri, '#') && !contains(fileName, '.')) {
+            uri += options.extension;
         }
         return uri;
     }
@@ -443,7 +458,9 @@
      * 处理包
      */
     function handlePackages(uri) {
-        if (isSystemModule(uri)) return uri;
+        if (isSystemModule(uri)) {
+            return uri;
+        }
         var index = uri.indexOf('/');
         if (index < 0) index = uri.length;
         var part1 = uri.substr(0, index);
@@ -486,8 +503,9 @@
     function applyLoadContextToModule(module, context) {
         module.id = context.id || module.id;
         module.deps = context.deps || module.deps;
-        module.factory = context.factory || module.factory;
+        module.factory = context.factory || module.factory || function() {};
         module.factoryDeps = context.factoryDeps || module.factoryDeps; //类似CommonJS的依赖表
+        module.executed = false;
         context = null; //清除 context
         return module;
     }
@@ -500,66 +518,68 @@
         if (!module) return;
         applyLoadContextToModule(module, context);
         module.saved = true;
+
+        //生成模块的待执行函数
+        module.execute = function() {
+            //如果存在 factory 
+            if (!module.executed && isFunction(module.factory)) {
+                //将模块的执行状态设定为 true
+                module.executed = true;
+                //处理传递给 factory 的参数
+                var depModules = module.depModules;
+                var depExports = [];
+                for (var i = 0; i < depModules.length; i++) {
+                    var depModule = depModules[i];
+                    if (depModule.id == 'require') {
+                        depExports.push(module.require);
+                    } else if (depModule.id == 'exports') {
+                        depExports.push(module.exports);
+                    } else if (depModule.id == 'module') {
+                        depExports.push(module);
+                    } else {
+                        depModule.execute();
+                        depExports.push(depModule.exports);
+                    }
+                }
+                depExports.push(module.require);
+                depExports.push(module.exports);
+                depExports.push(module);
+                //执行一个模块时，级联执行依赖的模块
+                //var returnObject = module.factory.apply(module, depExports);
+                var returnObject = module.factory.apply(env, depExports);
+                module.exports = returnObject || module.exports;
+            }
+            return module.exports;
+        };
+
         //处理模块静态依赖开始
         module.load(module.deps, function() {
-            module.imports = arguments || []; //将作为 define 的参数
-            async(function() {
-                //处理类CommonJS方式的依赖开始
-                module.load(module.factoryDeps, function() {
-                    async(function() {
-                        //生成模块的待执行函数
-                        module.execute = function() {
-                            if (module.executed || isNull(module.factory) || !isFunction(module.factory)) {
-                                module.executed = true;
-                                return module.exports;
-                            }
-                            //处理传递给 factory 的参数
-                            var srcImports = module.imports;
-                            var dstImports = [];
-                            for (var i = 0; i < srcImports.length; i++) {
-                                if (srcImports[i].id == 'require') {
-                                    dstImports.push(module.require);
-                                } else if (srcImports[i].id == 'exports') {
-                                    dstImports.push(module.exports);
-                                } else if (srcImports[i].id == 'module') {
-                                    dstImports.push(module);
-                                } else {
-                                    if (!module.executed) {
-                                        srcImports[i].execute();
-                                    }
-                                    dstImports.push(srcImports[i].exports);
-                                }
-                            }
-                            dstImports.push(module.require);
-                            dstImports.push(module.exports);
-                            dstImports.push(module);
-                            module.imports = dstImports;
-                            //
-                            var returnObject = module.factory.apply(module, module.imports);
-                            module.exports = returnObject || module.exports;
-                            module.executed = true;
-                            return module.exports;
-                        };
-                        //处理回调列表
-                        each(module.loadCallbacks, function(i, callback) {
-                            if (isFunction(callback)) {
-                                callback(module);
-                            }
-                        });
-                        //检查并出发加载完成事件
-                        if (owner.onLoad && isFunction(owner.onLoad)) {
-                            owner.onLoad(module);
-                        }
-                        //标记录加载完成
-                        module.loaded = true;
-                        module.loadCallbacks = null;
-                        //清除超时检查定时器
-                        if (module.timer) {
-                            clearTimeout(module.timer);
-                        }
-                    });
-                }); //处理类CommonJS方式的依赖结束，CommonJS 将延迟执行（在 x=require(...) 时执行）
-            });
+            module.depModules = arguments || []; //将作为 define 的参数
+            //async(function () { //async 1 开始
+            //处理类CommonJS方式的依赖开始
+            module.load(module.factoryDeps, function() {
+                module.factoryDepModules = arguments || [];
+                //async(function () {  //async 2 开始
+                //标记录加载完成
+                module.loaded = true;
+                //检查并出发加载完成事件
+                if (owner.onLoad && isFunction(owner.onLoad)) {
+                    owner.onLoad(module);
+                }
+                //清除超时检查定时器
+                if (module.timer) {
+                    clearTimeout(module.timer);
+                }
+                //加载完成处理回调列表
+                each(module.loadCallbacks, function(i, callback) {
+                    if (isFunction(callback)) {
+                        callback(module);
+                    }
+                });
+                module.loadCallbacks = null;
+                //}); //async 2 结束
+            }); //处理类CommonJS方式的依赖结束，CommonJS 将延迟执行（在 x=require(...) 时执行）
+            //}); //async 1 开始
         }); //处理模块静态依赖结束
     }
 
@@ -570,13 +590,21 @@
         //如果加载一个新模块，则创建模块上下文对象
         modules[uri] = modules[uri] || new Module(uri);
         var module = modules[uri];
-        //如果加载完成就直接回调;
-        if (module && module.saved && callback && isFunction(callback)) {
+        //如果已加载并保存就直接回调;
+        if (!isNull(module) && module.loaded && isFunction(callback)) {
             callback(module);
-            return module;
+            return;
+        }
+        //对 module.loaded=false 的模块进行循环依赖检查
+        if (isCircularDependency(uri, baseUri) && isFunction(callback)) {
+            //alert('循环依赖');
+            //async(function() {
+            callback(module);
+            //});
+            return;
         }
         //如果缓存中不存在，并且回调链也已创建，则压入当前callback,然后返回，等待回调
-        if (module && !isNull(module.loadCallbacks)) {
+        if (!isNull(module) && isArray(module.loadCallbacks)) {
             module.loadCallbacks.push(callback);
             return;
         }
@@ -585,25 +613,31 @@
         module.loadCallbacks.push(callback);
         //创建元素
         module.element = contains(uri, '.css') ? createStyle(uri) : createScript(uri);
+        //创建超时计时器（定时间需要在 bindLoadEvent 方法前，因为对于 css 会直接触发 “load 事件”）
+        if (options.maxLoadTime > 0) {
+            module.timer = setTimeout(function() {
+                throw "加载 " + uri + " 超时,可能原因: \"1.无法处理的循环依赖; 2.资源不存在; 3.脚本错误; 4.其它未知错误;\".";
+            }, options.maxLoadTime);
+        }
         //绑定load事件,模块下载完成，执行完成define，会立即触发load
         bindLoadEvent(module.element, function() {
             if (!module.loaded && !module.saved) {
                 var context = loadContextQueque.shift();
-                if (context != null) {
+                if (!isNull(context)) {
                     //TODO: 如果某天想支持一个文件多个模块
                     //需要在些将 loadContextQueque 里的所有模块取出来保存
                     saveModule(uri, context);
-                } else if (shimTable[uri] != null) {
+                } else if (!isNull(shimTable[uri])) {
                     //如果是一个垫片 URI，则生成垫片 Context
                     //垫片代码文件没有 define 只会在些触发 saveModule
                     context = shimTable[uri];
                     if (isFunction(context.exports) || isFunction(context.init)) {
                         var fun = context.init || context.exports || context.factory;
                         context.factory = fun;
-                    } else if (isString(context.exports) && typeof(window) !== 'undefined') {
-                        var globalName = context.exports;
+                    } else if (isString(context.exports)) {
+                        var varName = context.exports;
                         context.factory = function() {
-                            return window[globalName];
+                            return env[varName];
                         };
                     }
                     context.id = uri;
@@ -615,16 +649,11 @@
                 }
             }
         });
-        //创建超时计时器
-        if (options.maxLoadTime > 0) {
-            module.timer = setTimeout(function() {
-                throw "加载 " + uri + " 超时,可能原因: \"1.无法处理的循环依赖; 2.资源不存在; 3.脚本错误; 4.其它未知错误;\".";
-            }, options.maxLoadTime);
-        }
-        //
+        //设置加载中状态
         module.loading = true;
         //添加到 DOM 中
         appendToDom(module.element);
+        return;
     }
 
     /**
@@ -640,17 +669,20 @@
             var moduleUri = uri.substring(splitIndex + 1);
             //检查是否已加载
             var module = modules[moduleUri];
-            if (module && module.loaded) {
-                if (callback) callback(module);
+            if (!isNull(module) && module.loaded) {
+                if (callback) {
+                    callback(module);
+                }
                 return module;
             }
             //处理使用插件的引用
             return loadOne(pluginUri, function(pluginModule) {
-                if (pluginModule && pluginModule.saved && !pluginModule.executed && pluginModule.execute) {
+                //使用插件模块时，需要先执行插件模块
+                if (pluginModule && isFunction(pluginModule.execute)) {
                     pluginModule.execute();
                 }
                 var plugin = pluginModule.exports;
-                if (!plugin || !plugin.load) {
+                if (isNull(plugin) || !isFunction(plugin.load)) {
                     throw "插件 '" + pluginUri + "' 存在错误."
                 };
                 var onLoad = function(_exports) {
@@ -661,7 +693,9 @@
                         loading: true,
                         saved: true
                     };
-                    if (callback && isFunction(callback)) callback(module);
+                    if (isFunction(callback)) {
+                        callback(module);
+                    }
                 };
                 onLoad.fromText = onLoad;
                 onLoad.error = onLoad;
@@ -680,27 +714,72 @@
      */
     owner.load = function(deps, callback, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
-        var moduleList = [];
-        var uriCount = 0;
+        var moduleList = getModulesFromCache(uriList);
+        var loadCount = 0;
         if (uriList && uriList.length > 0) {
             each(uriList, function(i, uri) {
                 loadOne(uri, function() {
-                    uriCount += 1;
-                    if (uriCount < uriList.length) return;
+                    loadCount++;
+                    if (loadCount < uriList.length) return;
                     moduleList = getModulesFromCache(uriList) || moduleList;
-                    if (callback && isFunction(callback)) callback.apply(moduleList, moduleList);
+                    if (isFunction(callback)) {
+                        //callback.apply(moduleList, moduleList);
+                        callback.apply(env, moduleList);
+                    }
                 }, baseUri);
             });
         } else {
-            if (callback && isFunction(callback)) callback.apply(moduleList, moduleList);
+            if (isFunction(callback)) {
+                //callback.apply(moduleList, moduleList);
+                callback.apply(env, moduleList);
+            }
         }
         return moduleList;
     };
 
     /**
+     * 检测是否是循环依赖
+     **/
+    function isCircularDependency(uri, baseUri) {
+        var state = false;
+        //
+        baseUri = baseUri || options.baseUri || location.href;
+        if (isNull(baseUri) || isNull(uri)) state = false;
+        if (uri == baseUri) state = true;
+        if (!state) {
+            var loadModule = modules[uri];
+            if (!isNull(loadModule)) {
+                //state = loadModule.loaded;
+                if (!state && loadModule.deps && loadModule.deps.length > 0) {
+                    var deps = depsToUriList(loadModule.deps, loadModule.uri);
+                    each(deps, function(i, depUri) {
+                        if (depUri == baseUri || isCircularDependency(depUri, baseUri)) {
+                            state = true;
+                            return;
+                        }
+                    });
+                }
+                if (!state && loadModule.factoryDeps && loadModule.factoryDeps.length > 0) {
+                    var factoryDeps = depsToUriList(loadModule.factoryDeps, loadModule.uri);
+                    each(factoryDeps, function(i, depUri) {
+                        if (depUri == baseUri || isCircularDependency(depUri, baseUri)) {
+                            state = true;
+                            return;
+                        }
+                    });
+                }
+            } else {
+                state = false;
+            }
+        }
+        //console.log('检查"' + uri + '"和"' + baseUri + '"是否存在循环依赖 :' + state);
+        return state;
+    }
+
+    /**
      * 卸载一组文件
      */
-    owner.unload = function(deps, baseUri) {
+    owner.unload = owner.undef = function(deps, baseUri) {
         var uriList = depsToUriList(deps, baseUri);
         each(uriList, function(i, uri) {
             var module = modules[uri];
@@ -711,7 +790,6 @@
             }
         });
     };
-    owner.undef = owner.unload;
 
     /**
      * 将一组 module 转换为一组 exports
@@ -719,7 +797,7 @@
     function moduleListToExportList(moduleList) {
         var exportsList = [];
         each(moduleList, function(i, module) {
-            if (module && module.saved && !module.executed && module.execute) {
+            if (module && isFunction(module.execute)) {
                 module.execute();
             }
             exportsList.push(module.exports);
@@ -728,16 +806,20 @@
     };
 
     /**
-     * 全局 Require
+     * 全局 require
      */
     owner.require = function(deps, callback, baseUri) {
         var moduleList = owner.load(deps, function() {
             var moduleList = arguments;
+            //require 模块时，需要先执行这个模块
             var exportsList = moduleListToExportList(moduleList);
-            if (callback && isFunction(callback)) callback.apply(exportsList, exportsList);
+            if (isFunction(callback)) {
+                //callback.apply(exportsList, exportsList);
+                callback.apply(env, exportsList);
+            };
         }, baseUri);
         var exportsList = moduleListToExportList(moduleList);
-        return exportsList && exportsList.length == 1 ? exportsList[0] : exportsList;
+        return (exportsList && exportsList.length == 1) ? exportsList[0] : exportsList;
     };
 
     /**
@@ -749,9 +831,7 @@
             //如果 URL 中包括插件信息，则提取出不包括插件的 “模块” URI
             var moduleUri = uri.split('!')[1] || uri || '';
             var module = modules[moduleUri]
-            if (module) {
-                foundModules.push(module);
-            }
+            foundModules.push(module);
         });
         return foundModules;
     }
@@ -768,7 +848,7 @@
         self.load = function(deps, callback) {
             return owner.load(deps, callback, uri); //如果提前预加载则能取到返回值
         };
-        self.unload = function(deps) {
+        self.unload = self.undef = function(deps) {
             return owner.unload(deps, uri);
         };
         self.require = function(deps, callback) {
@@ -783,14 +863,15 @@
         self.require.specified = function(_uri) {
             return modules[_uri].loaded || !isNull(modules[_uri].loadCallbacks);
         };
-        this.exports = {};
-        this.factory = null;
-        this.deps = null;
-        this.factoryDeps = null;
-        this.loading = false;
-        this.loaded = false;
-        this.executed = false;
-        this.saved = false;
+        self.require.module = self;
+        self.exports = {};
+        self.factory = null;
+        self.deps = null;
+        self.factoryDeps = null;
+        self.loading = false;
+        self.loaded = false;
+        self.executed = false;
+        self.saved = false;
     }
 
     /**
@@ -845,12 +926,12 @@
             //处理模块代码中的类CommonJS的依赖方式
             var code = context.factory.toString();
             var factoryDeps = matchRequire(code);
-            if (factoryDeps && factoryDeps.length > 0) {
+            if (isArray(factoryDeps) && factoryDeps.length > 0) {
                 context.factoryDeps = factoryDeps;
             }
             //如在此时能取到模块URL则保存模块，否则，将模块描述压入队列在script的load中处理
             var iScript = getInteractiveScript();
-            if (iScript) {
+            if (!isNull(iScript)) {
                 var uri = iScript.getAttribute('src');
                 saveModule(uri, context);
             } else {
@@ -862,8 +943,8 @@
     /**
      * 处理路径
      **/
-    owner.resovleUri = function(uri, baseUri) {
-        return resovleUri(uri, baseUri || options.baseUri || location.href);
+    owner.resovleUri = function(uri, baseUri, doNotHandleExt) {
+        return resovleUri(uri, baseUri || options.baseUri || location.href, doNotHandleExt);
     };
 
     /**
@@ -888,7 +969,7 @@
     /**
      * 声明全局 require
      */
-    env.require = owner;
+    env.require = owner.require;
 
 })(this);
 //
