@@ -28,7 +28,7 @@
 + 邮件组：emsjs@googlegroups.com
 ```
 
-#####规范定义
+#####模块定义
 ```javascript
 define([id],[deps...<require>,<exports>,<module>],
     function(... <require>,<exports>,<module>){
@@ -61,16 +61,16 @@ define([id],[deps...<require>,<exports>,<module>],
 <!--方式二-->
 <script type="text/javascript" src='scripts/ems.js'></script>
 <script type="text/javascript">
-    ems.load('scripts/module/main');
+    ems.require('scripts/module/main');
 </script>
 
 <!--作为脚本加载器使用-->
 <script type="text/javascript" src='scripts/ems.js'></script>
 <script type="text/javascript">
-    ems.load('scripts/script1.js',function(){
+    ems.require('scripts/script1.js',function(){
         //callback可以省略，也可以在callback处理脚本加载完成后才能执行的操作
     });
-    ems.load(['scripts/script1.js','scripts/script2.js'],function(){
+    ems.require(['scripts/script1.js','scripts/script2.js'],function(){
         //callback可以省略，也可以在callback处理脚本加载完成后才能执行的操作
     });
 </script>
