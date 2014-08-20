@@ -69,7 +69,7 @@
 </code></pre>
 
 <h5>
-<a name="%E8%A7%84%E8%8C%83%E5%AE%9A%E4%B9%89" class="anchor" href="#%E8%A7%84%E8%8C%83%E5%AE%9A%E4%B9%89"><span class="octicon octicon-link"></span></a>规范定义</h5>
+<a name="%E6%A8%A1%E5%9D%97%E5%AE%9A%E4%B9%89" class="anchor" href="#%E6%A8%A1%E5%9D%97%E5%AE%9A%E4%B9%89"><span class="octicon octicon-link"></span></a>模块定义</h5>
 
 <div class="highlight highlight-javascript"><pre><span class="nx">define</span><span class="p">([</span><span class="nx">id</span><span class="p">],[</span><span class="nx">deps</span><span class="p">...</span><span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">],</span>
     <span class="kd">function</span><span class="p">(...</span> <span class="o">&lt;</span><span class="nx">require</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">exports</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="nx">module</span><span class="o">&gt;</span><span class="p">){</span>
@@ -102,16 +102,16 @@
 <span class="c">&lt;!--方式二--&gt;</span>
 <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">'scripts/ems.js'</span><span class="nt">&gt;&lt;/script&gt;</span>
 <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
-    <span class="nx">ems</span><span class="p">.</span><span class="nx">load</span><span class="p">(</span><span class="s1">'scripts/module/main'</span><span class="p">);</span>
+    <span class="nx">ems</span><span class="p">.</span><span class="nx">require</span><span class="p">(</span><span class="s1">'scripts/module/main'</span><span class="p">);</span>
 <span class="nt">&lt;/script&gt;</span>
 
 <span class="c">&lt;!--作为脚本加载器使用--&gt;</span>
 <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">'scripts/ems.js'</span><span class="nt">&gt;&lt;/script&gt;</span>
 <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
-    <span class="nx">ems</span><span class="p">.</span><span class="nx">load</span><span class="p">(</span><span class="s1">'scripts/script1.js'</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">ems</span><span class="p">.</span><span class="nx">require</span><span class="p">(</span><span class="s1">'scripts/script1.js'</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
         <span class="c1">//callback可以省略，也可以在callback处理脚本加载完成后才能执行的操作</span>
     <span class="p">});</span>
-    <span class="nx">ems</span><span class="p">.</span><span class="nx">load</span><span class="p">([</span><span class="s1">'scripts/script1.js'</span><span class="p">,</span><span class="s1">'scripts/script2.js'</span><span class="p">],</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">ems</span><span class="p">.</span><span class="nx">require</span><span class="p">([</span><span class="s1">'scripts/script1.js'</span><span class="p">,</span><span class="s1">'scripts/script2.js'</span><span class="p">],</span><span class="kd">function</span><span class="p">(){</span>
         <span class="c1">//callback可以省略，也可以在callback处理脚本加载完成后才能执行的操作</span>
     <span class="p">});</span>
 <span class="nt">&lt;/script&gt;</span>
