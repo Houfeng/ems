@@ -9,6 +9,10 @@ test('系统对象', function() {
 
 ems.config({
     maxLoadTime: 3000,
+    disabledCircularDependency: false,
+    settings: {
+        test: 'test'
+    },
     packages: [{
         name: "m",
         location: ems.resovleUri("./files/"),

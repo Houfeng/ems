@@ -27,6 +27,12 @@
     owner.author = "Houfeng";
 
     /*****************************  工具函数开始  *****************************/
+
+    /**
+     * 某此公开的工具函数会挂载到这个对象上，一般用于开发或调式
+     */
+    owner.tool = {};
+
     /**
      * 检查是否为null或undefined
      */
@@ -140,7 +146,7 @@
         }
         return foundArray;
     }
-    owner.matchRequire = matchRequire;
+    owner.tool.matchRequire = matchRequire;
 
     /*****************************  DOM 函数开始  *****************************/
 
@@ -261,6 +267,16 @@
     options.maxLoadTime = 10000;
 
     /**
+     * 是否禁用循环依赖
+     **/
+    options.disabledCircularDependency = false;
+
+    /**
+     * 公共配置节
+     **/
+    options.settings = {};
+
+    /**
      * 别名列表 (在 owner 上挂载对应属性)
      */
     var alias = owner.alias = owner.paths = options.alias = options.paths = {};
@@ -335,11 +351,17 @@
             var key = value.name || name;
             packages[key] = value;
         });
+        //公共配置节
+        _options.settings = _options.settings || {};
+        each(_options.settings, function(name, value) { //防止覆盖已添加的包
+            var key = value.name || name;
+            options.settings[key] = value;
+        });
         //处理其它配置
         options.extension = options.extension || _options.extension;
         options.baseUri = options.baseUri || _options.baseUri || _options.baseUrl;
         options.maxLoadTime = options.maxLoadTime || _options.maxLoadTime;
-        //options.config = options.config || _options.config;
+        options.disabledCircularDependency = _options.disabledCircularDependency;
     };
 
     /*****************************  路径函数开始  *****************************/
@@ -523,7 +545,19 @@
         module.execute = function() {
             //如果存在 factory 
             if (!module.executed && isFunction(module.factory)) {
-                //将模块的执行状态设定为 true
+                /*
+                将模块的执行状态设定为 true。
+                1）因为 execute 是同步方法，不会出现 executed 已置为 true 
+                   但是没执行完时被 require 而出理引用失败。
+                2）因为 execute 需要级联执行静态依赖的模块，为支持循环依赖，执行
+                   一开始，在级联调用 execute 之前，就需要将 executed 置为 true
+                   以避免出现无限循环调用，因为级联调用时，如果出现循环依赖，
+                   标准AMD 导入或者在 factory 可直接执行到的 commonjs require，
+                   会导入一个空对象（{}）, 而在 exports 的某一个方法中的 require
+                   因为 execute 已经完成可以正确拿到依赖的 exports，或者导入一个
+                   未执行模块，即时调用 execute , 因为 execute 为同步方法，同样可
+                   以正确拿到 exports
+                */
                 module.executed = true;
                 //处理传递给 factory 的参数
                 var depModules = module.depModules;
@@ -595,7 +629,12 @@
             callback(module);
             return;
         }
-        //对 module.loaded=false 的模块进行循环依赖检查
+        /*
+        代码能执行到这里，说明是加载的一个没载入的模块，些时需要
+        对 module.loaded=false 的模块进行循环依赖检查，如果检查为 true 则直接 callback
+        已被载入的循环模块 isCircularDependency 才会返回 true ，未载入的会返回 false
+        所以即能确保循环模块会正确载入，并同时不会出理重复载入，或循环级联载入调用
+        */
         if (isCircularDependency(uri, baseUri) && isFunction(callback)) {
             //alert('循环依赖');
             //async(function() {
@@ -772,7 +811,9 @@
                 state = false;
             }
         }
-        //console.log('检查"' + uri + '"和"' + baseUri + '"是否存在循环依赖 :' + state);
+        if (options.disabledCircularDependency && state) {
+            throw '已检测到"' + uri + '"和"' + baseUri + '"或其上层依赖存在循环依赖';
+        }
         return state;
     }
 
