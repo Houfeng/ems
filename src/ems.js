@@ -541,7 +541,7 @@
      */
     function saveModule(uri, context) {
         var module = modules[uri];
-        if (!module) return;
+        if (isNull(module)) return;
         applyLoadContextToModule(module, context);
         module.saved = true;
 
@@ -583,7 +583,6 @@
                 depExports.push(module.exports);
                 depExports.push(module);
                 //执行一个模块时，级联执行依赖的模块
-                //var returnObject = module.factory.apply(module, depExports);
                 var returnObject = module.factory.apply(env, depExports);
                 module.exports = returnObject || module.exports;
             }
@@ -625,6 +624,9 @@
      * 加载一个文件
      */
     function _loadOne(uri, callback, baseUri) {
+        if (isNull(uri)) {
+            throw "路径 '" + uri + "' 存在错误.";
+        }
         //如果加载一个新模块，则创建模块上下文对象
         modules[uri] = modules[uri] || new Module(uri);
         var module = modules[uri];
@@ -703,6 +705,9 @@
      * 加载一个模块，会检测是否使用了插件，内部调用 _loadOne
      **/
     function loadOne(uri, callback, baseUri) {
+        if (isNull(uri)) {
+            throw "路径 '" + uri + "' 存在错误.";
+        }
         if (!contains(uri, '!')) {
             return _loadOne(uri, callback, baseUri);
         } else {
@@ -710,23 +715,29 @@
             var splitIndex = uri.lastIndexOf('!');
             var pluginUri = uri.substring(0, splitIndex);
             var moduleUri = uri.substring(splitIndex + 1);
+            if (pluginUri == '' || moduleUri == '') {
+                throw "路径 '" + uri + "' 存在错误.";
+            }
             //检查是否已加载
             var module = modules[moduleUri];
             if (!isNull(module) && module.loaded) {
-                if (callback) {
+                if (isFunction(callback)) {
                     callback(module);
                 }
                 return module;
             }
             //处理使用插件的引用
             return loadOne(pluginUri, function(pluginModule) {
+                if (isNull(pluginModule)) {
+                    throw "插件 '" + pluginUri + "' 存在错误.";
+                }
                 //使用插件模块时，需要先执行插件模块
-                if (pluginModule && isFunction(pluginModule.execute)) {
+                if (isFunction(pluginModule.execute)) {
                     pluginModule.execute();
                 }
                 var plugin = pluginModule.exports;
                 if (isNull(plugin) || !isFunction(plugin.load)) {
-                    throw "插件 '" + pluginUri + "' 存在错误."
+                    throw "插件 '" + pluginUri + "' 存在错误.";
                 };
                 var onLoad = function(_exports) {
                     var module = modules[moduleUri] = {
@@ -742,9 +753,9 @@
                 };
                 onLoad.fromText = onLoad;
                 onLoad.error = onLoad;
-                /**
-                 * 调用插件方法。
-                 * load: function (name, parentRequire, onload, config)
+                /*
+                 调用插件方法。
+                 load: function (name, parentRequire, onload, config)
                  */
                 var parentModule = modules[baseUri] || pluginModule || owner;
                 plugin.load(moduleUri, parentModule.require, onLoad, owner.config());
@@ -766,14 +777,12 @@
                     if (loadCount < uriList.length) return;
                     moduleList = getModulesFromCache(uriList) || moduleList;
                     if (isFunction(callback)) {
-                        //callback.apply(moduleList, moduleList);
                         callback.apply(env, moduleList);
                     }
                 }, baseUri);
             });
         } else {
             if (isFunction(callback)) {
-                //callback.apply(moduleList, moduleList);
                 callback.apply(env, moduleList);
             }
         }
@@ -792,7 +801,7 @@
         if (!state) {
             var loadModule = modules[uri];
             if (!isNull(loadModule)) {
-                //state = loadModule.loaded;
+                //state = loadModule.loaded; //检测时是否受 loaed 的影响
                 if (!state && loadModule.deps && loadModule.deps.length > 0) {
                     var deps = depsToUriList(loadModule.deps, loadModule.uri);
                     each(deps, function(i, depUri) {
@@ -842,10 +851,14 @@
     function moduleListToExportList(moduleList) {
         var exportsList = [];
         each(moduleList, function(i, module) {
-            if (module && isFunction(module.execute)) {
-                module.execute();
+            if (isNull(module)) {
+                exportsList.push(null);
+            } else {
+                if (isFunction(module.execute)) {
+                    module.execute();
+                }
+                exportsList.push(module.exports);
             }
-            exportsList.push(module.exports);
         });
         return exportsList;
     };
@@ -960,7 +973,7 @@
      */
     owner.define = function(id, deps, factory) {
         var context = createLoadContext(id, deps, factory);
-        if (context) {
+        if (!isNull(context)) {
             //如果模块是一个JSON对象
             if (!isFunction(context.factory)) {
                 var jsonObject = context.factory;
