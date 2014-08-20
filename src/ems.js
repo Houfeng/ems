@@ -1,5 +1,5 @@
 /**
- * emsjs v1.2.8
+ * emsjs v1.2.9
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -19,7 +19,7 @@
     /**
      * 版本信息
      */
-    owner.version = "v1.2.8";
+    owner.version = "v1.2.9";
 
     /**
      * 作者信息
@@ -341,7 +341,7 @@
         });
         //处理垫片配置
         _options.shim = _options.shim || {};
-        each(_options.shim, function(name, value) { //防止覆盖已添加的包
+        each(_options.shim, function(name, value) { //防止覆盖已添加垫片配置
             var key = value.name || name;
             shim[key] = value;
         });
@@ -349,13 +349,13 @@
         _options.packages = _options.packages || [];
         each(_options.packages, function(name, value) { //防止覆盖已添加的包
             var key = value.name || name;
-            packages[key] = value;
+            packages[value.name] = value;
         });
         //公共配置节
         _options.settings = _options.settings || {};
-        each(_options.settings, function(name, value) { //防止覆盖已添加的包
+        each(_options.settings, function(name, value) { //防止覆盖已添加公共配置
             var key = value.name || name;
-            options.settings[key] = value;
+            options.settings[value.name] = value;
         });
         //处理其它配置
         options.extension = options.extension || _options.extension;
@@ -443,18 +443,22 @@
     }
 
     /**
-     * 处理别名及垫片
+     * 处理别名及垫片,垫片指向的 uri 或同名的 “别名” 必须指向一个文件
      */
     function handleAliasAndShim(uri) {
-        if (isSystemModule(uri)) {
+        if (isNull(uri) || isSystemModule(uri)) {
             return uri;
         }
-        //查找别名
+        //查找别名配置
         var realUri = alias[uri] || uri;
+        //如果别名配置的值是一个 ｛name:'',uri:''｝的配置
+        realUri = realUri.uri || realUri || uri;
         //查找垫片
         var shimItem = shim[uri];
         if (shimItem != null) {
-            shimTable[shimItem.uri || realUri] = shimItem;
+            //如果垫片配置了指定的Uri
+            var realUri = shimItem.uri || realUri;
+            shimTable[realUri] = shimItem;
         }
         return realUri;
     }

@@ -20,10 +20,14 @@ ems.config({
     }],
     paths: {
         shimTest: ems.resovleUri('./files/shim.js'),
-        jq: ems.resovleUri('./files/jQuery.js')
+        jq1: {
+            name: 'jq',
+            uri: ems.resovleUri('./files/jQuery.js')
+        }
     },
     shim: {
         shimTest: {
+            //uri:ems.resovleUri('./files/shim.js'),
             deps: ['jq'],
             exports: function($) {
                 return window['shimTest'];
