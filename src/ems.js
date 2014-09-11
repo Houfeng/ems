@@ -1,5 +1,5 @@
 /**
- * emsjs v1.2.9
+ * emsjs v1.3.0
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -19,7 +19,7 @@
     /**
      * 版本信息
      */
-    owner.version = "v1.2.9";
+    owner.version = "v1.3.0";
 
     /**
      * 作者信息
@@ -44,7 +44,20 @@
      * 检查是否是数组
      */
     function isArray(obj) {
-        return !isNull(obj) && (obj instanceof Array) || (obj && obj.length && obj[0]);
+        if (isNull(obj)) return false;
+        var v1 = Object.prototype.toString.call(obj) === '[object Array]';
+        var v2 = obj instanceof Array;
+        var v3 = !isString(obj) && isNumber(obj.length) && isFunction(obj.splice);
+        var v4 = !isString(obj) && isNumber(obj.length) && obj[0];
+        return v1 || v2 || v3 || v4;
+    }
+
+    /**
+     * 检查是否是数字
+     */
+    function isNumber(obj) {
+        if (isNull(obj)) return false;
+        return typeof obj === 'number' || obj instanceof Number;
     }
 
     /**
