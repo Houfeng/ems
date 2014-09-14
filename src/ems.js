@@ -1,5 +1,5 @@
 /**
- * emsjs v1.3.0
+ * emsjs v1.3.1
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -19,7 +19,7 @@
     /**
      * 版本信息
      */
-    owner.version = "v1.3.0";
+    owner.version = "v1.3.1";
 
     /**
      * 作者信息
@@ -1040,7 +1040,7 @@
     /**
      * 声明全局 require
      */
-    env.require = owner.require;
+    //env.require = owner.require;
 
 })(this);
 //
