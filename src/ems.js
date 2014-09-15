@@ -1,5 +1,5 @@
 /**
- * emsjs v1.3.1
+ * emsjs v1.3.2
  * 作者：侯锋
  * 邮箱：admin@xhou.net
  * 网站：http://houfeng.net , http://houfeng.net/ems
@@ -19,7 +19,7 @@
     /**
      * 版本信息
      */
-    owner.version = "v1.3.1";
+    owner.version = "v1.3.2";
 
     /**
      * 作者信息
@@ -121,7 +121,7 @@
      * 异步方法
      */
     function async(fn) {
-        setTimeout(fn, 13);
+        return setTimeout(fn, 0);
     }
 
     /**
@@ -250,7 +250,10 @@
         if (!element || !handler) return;
         //早期的Safari不支持link的load事件，暂不判断浏览器，粗暴的针对css，直接回调handler
         if ((typeof HTMLLinkElement !== 'undefined') && (element instanceof HTMLLinkElement)) {
-            handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
+            //因为 css 直接执行事件处理函数 handler 加 async 防阻塞
+            async(function() {
+                handler.apply(element, [{}]); //参数为{},是为了让加载css时返回一个“空对象”
+            });
             return;
         }
         var loadEventName = element.attachEvent ? "readystatechange" : "load";
@@ -605,21 +608,21 @@
         //处理模块静态依赖开始
         module.load(module.deps, function() {
             module.depModules = arguments || []; //将作为 define 的参数
-            //async(function () { //async 1 开始
+            //async(function() { //async 1 开始
             //处理类CommonJS方式的依赖开始
             module.load(module.factoryDeps, function() {
                 module.factoryDepModules = arguments || [];
-                //async(function () {  //async 2 开始
-                //标记录加载完成
-                module.loaded = true;
-                //检查并出发加载完成事件
-                if (owner.onLoad && isFunction(owner.onLoad)) {
-                    owner.onLoad(module);
-                }
+                //async(function() { //async 2 开始
                 //清除超时检查定时器
                 if (module.timer) {
                     clearTimeout(module.timer);
                 }
+                //检查并出发加载完成事件
+                if (owner.onLoad && isFunction(owner.onLoad)) {
+                    owner.onLoad(module);
+                }
+                //标记录加载完成
+                module.loaded = true;
                 //加载完成处理回调列表
                 each(module.loadCallbacks, function(i, callback) {
                     if (isFunction(callback)) {
@@ -645,7 +648,9 @@
         var module = modules[uri];
         //如果已加载并保存就直接回调;
         if (!isNull(module) && module.loaded && isFunction(callback)) {
+            //async(function() {
             callback(module);
+            //});
             return;
         }
         /*
